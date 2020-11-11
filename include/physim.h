@@ -69,12 +69,13 @@ public:
 	Model(string name, ComposedModel *parent = nullptr);
 	virtual ~Model();
 	inline string name() const { return _name; }
-	string fullname();
+	string fullname() const;
 	inline Simulation& sim() const { return *_sim; }
 	inline date_t date() const;
 	inline bool simEnabled() const { return _sim != nullptr; }
 	inline const vector<AbstractPort *>& ports() const { return _ports; }
 
+	virtual void init();
 	virtual void update();
 	virtual void propagate(const AbstractPort& port);
 
@@ -96,7 +97,7 @@ private:
 	ComposedModel *_parent;
 	Simulation *_sim;
 	vector<AbstractPort *> _ports;
-	string _full_name;
+	mutable string _full_name;
 };
 
 
@@ -113,7 +114,7 @@ public:
 	inline Model& model() const { return _model; }
 	inline bool isLinked() const { return _back != nullptr; }
 	AbstractPort *source();
-	string fullname();
+	string fullname() const;
 protected:
 	virtual void finalize(Monitor& mon);
 private:
@@ -123,7 +124,7 @@ private:
 	int _size;
 	Model& _model;
 	AbstractPort *_back;
-	string _full_name;
+	mutable string _full_name;
 };
 
 template <class T, int N>
@@ -215,9 +216,12 @@ class PeriodicModel: public Model {
 public:
 	PeriodicModel(string name, duration_t period = 1, ComposedModel *parent = nullptr);
 	PeriodicModel(string name, ComposedModel *parent = nullptr);
+	inline duration_t period() const { return _period; }
 protected:
 	void start() override;
 	void propagate(const AbstractPort& port) override;
+	void update();
+	virtual void update(date_t data) = 0;
 private:
 	duration_t _period;
 };
@@ -227,6 +231,7 @@ class ComposedModel: public Model {
 public:
 	ComposedModel(string name, ComposedModel *parent = nullptr);
 protected:
+	void init() override;
 	void propagate(const AbstractPort& port) override;
 	void start() override;
 	void stop() override;
@@ -252,18 +257,29 @@ public:
 	void run();
 	void run(duration_t duration);
 	void runUntil(date_t date);
+	void start();
 	void step();
+	void pause();
+	void stop();
 	void trigger(Model& model);
 	void schedule(Model& model, date_t at);
 	inline date_t date() const { return _date; }
-	void stop();
 
 	inline Model& top() const { return _top; }
 	inline Monitor& monitor() const { return *_mon; }
 	inline bool tracing() const { return _tracing; }
 	inline void setTracing(bool t) { _tracing = t; }
+	inline bool isStopped() const { return _state == STOPPED; }
+	inline bool isRunning() const { return _state == STOPPED; }
+	inline bool isPaused() const { return _state == STOPPED; }
 
 private:
+
+	typedef enum {
+		STOPPED,
+		PAUSED,
+		RUNNING
+	} state_t;
 
 	class Date {
 	public:
@@ -281,7 +297,8 @@ private:
 	priority_queue<Date> _sched;
 	date_t _date;
 	Monitor *_mon;
-	bool _running, _mon_alloc, _tracing;
+	bool _mon_alloc, _tracing;
+	state_t _state;
 };
 
 inline date_t Model::date() const { return sim().date(); }

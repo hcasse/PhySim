@@ -40,9 +40,10 @@ ReactiveTest::ReactiveTest(string name)
 int ReactiveTest::run() {
 	_sim = new Simulation(*this);
 	_sim->setTracing(_tracing);
-	err() << "launching " << name() << endl;
 	_error_cnt = 0;
 	_failed = false;
+	_sim->start();
+	err() << "launching " << name() << endl;
 	test();
 	if(_failed)
 		_error_cnt++;
@@ -84,6 +85,77 @@ void ReactiveTest::step() {
  * @param x		Input port to check.
  * @param ex	Expacted value.
  * @param i		Index in the port of the value to test.
+ */
+
+
+/**
+ * @class PeriodicTest
+ * Class providing test for periodic models.
+ * The function @ref test() is called at each end of period of
+ * the periodic model. The output ports (connected to input port of the
+ * test mode) is checked against some expected. As soon as one of these
+ * check fails, the tests stops and issues an error.
+ *
+ * Otherwise the test simulation goes to the exhaustion of the test
+ * duration and the test is considered as a success.
+ */
+
+/**
+ * Build a periodic test.
+ * @param name		Name of the test.
+ * @param model		Periodic model to test.
+ * @param duration	Duration of the test.
+ */
+PeriodicTest::PeriodicTest(string name, PeriodicModel& model, duration_t duration):
+	ComposedModel(name),
+	_model(model),
+	_duration(duration),
+	_sim(nullptr),
+	_failed(false),
+	_tracing(false)
+	{ }
+
+/**
+ * Perform the test.
+ * @return	0 for success, non-0 else (can be passed as return of main function).
+ */
+int PeriodicTest::run() {
+	_sim = new Simulation(*this);
+	_sim->setTracing(_tracing);
+	_failed = false;
+	_sim->start();
+	err() << "Launching " << name() << endl;
+	while(not _failed and date() < _duration) {
+		sim().step();
+		if(date() % _model.period() == 1)
+			test(date() - 1);
+	}
+	if(_failed)
+		err() << "Failure at " << date() << endl;
+	else
+		err() << "Success!" << endl;
+	return _failed;
+}
+
+/**
+ * @fn void PeriodicTest::test(date_t date);
+ * Function to overload to implement the test.
+ * @param date	Current date.
+ */
+
+/**
+ * @fn void PeriodicTest::setTracing(int t);
+ * Set the tracing state option.
+ * @param t		If true, tracing is on, the tracing is off else.
+ */
+
+/**
+ * @fn void PeriodicTest::check(InputPort<T, N>& x, int ex, int i = 0);
+ * Function to test the value of an input port against an expected value.
+ * A failure in this check cause the failure of the whole test.
+ * @param x		Input port to test.
+ * @param ex	Expected value.
+ * @param i		Value index if the port is an array (optional).
  */
 
 }	// physim

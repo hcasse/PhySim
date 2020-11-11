@@ -35,28 +35,49 @@ Simulation::Simulation(Model& top, Monitor& mon):
 	_top(top),
 	_date(0),
 	_mon(new TerminalMonitor()),
-	_running(false),
 	_mon_alloc(false),
-	_tracing(false)
+	_tracing(false),
+	_state(STOPPED)
 {
 	_top.finalize(*this);
 }
 
 ///
 Simulation::~Simulation() {
+	stop();
 	if(_mon_alloc)
 		delete _mon;
+}
+
+/**
+ * Start the simulation.
+ *
+ */
+void Simulation::start() {
+	if(_state == STOPPED) {
+		if(tracing())
+			_mon->err() << "TRACE: starting the simulation." << endl;
+		_date = 0;
+		_top.start();
+		if(tracing())
+			_mon->err() << "TRACE: initializing the simulation." << endl;
+		_top.init();
+		if(tracing())
+			_mon->err() << "TRACE: simulation paused." << endl;
+		_state = PAUSED;
+	}
 }
 
 /**
  * Run the function until the simulation is stopped.
  */
 void Simulation::run() {
-	_running = true;
-	_top.start();
-	while(_running == true)
+	start();
+	_state = RUNNING;
+	while(_state == RUNNING)
 		step();
-	_top.stop();
+	if(_state == RUNNING)
+		_state = PAUSED;
 }
 
 /**
@@ -64,14 +85,14 @@ void Simulation::run() {
  * is stopped.
  */
 void Simulation::run(duration_t duration) {
-	_running = true;
-	_top.start();
-	while(_running == true && duration != 0) {
+	start();
+	_state = RUNNING;
+	while(_state == RUNNING && duration != 0) {
 		step();
 		duration--;
 	}
-	_top.stop();
-	_running = false;
+	if(_state == RUNNING)
+		_state = PAUSED;
 }
 
 /**
@@ -79,12 +100,12 @@ void Simulation::run(duration_t duration) {
  * is stopped.
  */
 void Simulation::runUntil(date_t date) {
-	_running = true;
-	_top.start();
-	while(_running == true && _date < date)
+	start();
+	_state = RUNNING;
+	while(_state == RUNNING && _date < date)
 		step();
-	_top.stop();
-	_running = false;
+	if(_state == RUNNING)
+		_state = PAUSED;
 }
 
 /*
@@ -92,31 +113,38 @@ void Simulation::runUntil(date_t date) {
  * is stopped, or it stays model to update.
  */
 void Simulation::step() {
+	_state = RUNNING;
 
 	// pump read dates
-	while(not _sched.empty() and _sched.top().at == _date) {
+	while(not _sched.empty() and _sched.top().at == _date and _state != STOPPED) {
 		_todo.insert(_sched.top().model);
 		_sched.pop();
 	}
 
 	// pump models that needs to be updated
-	while(not _todo.empty()) {
+	while(not _todo.empty() and _state != STOPPED) {
 		auto m = *_todo.begin();
 		_todo.erase(m);
-		_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+		if(tracing())
+			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
 		m->update();
 	}
 
 	// next date
 	_date++;
+	if(_state == RUNNING)
+		_state = PAUSED;
 }
+
 
 /**
  * Ask to trigger the given model as soon as possible.
  * @param model	Model to trigger.s
  */
 void Simulation::trigger(Model& model) {
-	_todo.insert(&model);
+	//_mon->err() << "DEBUG: state = " << _state << endl;
+	if(not isStopped())
+		_todo.insert(&model);
 }
 
 /**
@@ -139,11 +167,25 @@ void Simulation::schedule(Model& model, date_t at) {
  */
 
 /**
- * Stop the current simulation (if any).
+ * Pause the current simulation (if any).
+ */
+void Simulation::pause() {
+	_state = PAUSED;
+}
+
+/**
+ * Stop the current simulation.
  */
 void Simulation::stop() {
-	_running = false;
+	if(_state != STOPPED) {
+		_state = STOPPED;
+		_top.stop();
+		_todo.clear();
+		while(not _sched.empty())
+			_sched.pop();
+	}
 }
+
 
 /**
  * @fn Model& Simulation::top() const;

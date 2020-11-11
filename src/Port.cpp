@@ -82,7 +82,7 @@ AbstractPort *AbstractPort::source() {
 /**
  * Get the full name of the port.
  */
-string AbstractPort::fullname() {
+string AbstractPort::fullname() const {
 	if(_full_name == "")
 		_full_name = model().fullname() + "." + name();
 	return _full_name;

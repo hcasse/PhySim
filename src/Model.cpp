@@ -45,6 +45,14 @@ void Model::update() {
 
 
 /**
+ * Function called by the simulator just before starting
+ * to let the system initialize itself. The default implementation does nothing.
+ */
+void Model::init() {
+}
+
+
+/**
  * Called when the simulation is started.
  * @param sim	Current simulator.
  */
@@ -66,10 +74,10 @@ void Model::stop() {
  */
 void Model::finalize(Simulation& sim) {
 	_sim = &sim;
-	err() << "DEBUG: finalize " << name() << endl;
+	//err() << "DEBUG: finalize " << name() << endl;
 	for(auto p: _ports) {
 		p->finalize(sim.monitor());
-		err() << "DEBUG: finalize port " << p->fullname() << endl;
+		//err() << "DEBUG: finalize port " << p->fullname() << endl;
 	}
 }
 
@@ -77,7 +85,7 @@ void Model::finalize(Simulation& sim) {
  * Get the dot-separated full name of the model.
  * @return 	Full name.
  */
-string Model::fullname() {
+string Model::fullname() const {
 	if(_full_name == "") {
 		if(_parent == nullptr)
 			_full_name = _name;
@@ -163,8 +171,7 @@ ReactiveModel::ReactiveModel(string name, ComposedModel *parent)
  *
  */
 void ReactiveModel::propagate(const AbstractPort& port) {
-	if(simEnabled())
-		sim().trigger(*this);
+	sim().trigger(*this);
 }
 
 
@@ -207,6 +214,12 @@ void PeriodicModel::propagate(const AbstractPort& port) {
 }
 
 
+void PeriodicModel::update() {
+	update(date());
+	sim().schedule(*this, date() + _period);
+}
+
+
 /**
  * @class ComposedMode
  * A composed model is made of other models but is never activated by
@@ -225,6 +238,13 @@ ComposedModel::ComposedModel(string name, ComposedModel *parent)
 ///
 void ComposedModel::propagate(const AbstractPort& port) {
 	// TODO
+}
+
+///
+void ComposedModel::init() {
+	Model::init();
+	for(auto m: subs)
+		m->init();
 }
 
 ///
