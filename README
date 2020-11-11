@@ -1,0 +1,18 @@
+To compile this projet, the following requiremens are needed:
+  * C++11 compiler
+  * Cmake
+  
+To boot strap it, type in the top directory:
+	$ cmake .
+
+To select debugging mode, edit CMakeCache.txt and fix the following line:
+	//Choose the type of build, options are: None Debug Release RelWithDebInfo
+	// MinSizeRel ...
+	CMAKE_BUILD_TYPE:STRING=Debug
+
+To compile the project in the top directory:
+	$ make .
+
+Test are contained in the directory "test".
+
+A ready to develop application skeleton can be found in main.cpp.
