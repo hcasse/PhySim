@@ -26,37 +26,59 @@ protected:
 	}
 };
 
-class SimpleReactiveTest: public ReactiveTest {
+class Twice: public ReactiveModel {
+public:
+	InputPort<int> x;
+	OutputPort<int> twox;
+
+	Twice(string name, ComposedModel *parent):
+		ReactiveModel(name, parent),
+		x(this, "x"),
+		twox(this, "twox")
+	{ }
+protected:
+
+	void update() override {
+		twox = x * 2;
+	}
+};
+
+class ComposedReactiveTest: public ReactiveTest {
 public:
 	Square s;
+	Twice t;
 	OutputPort<int> x;
-	InputPort<int> x2;
+	InputPort<int> y;
 
-	SimpleReactiveTest():
-		ReactiveTest("simple-reactive-test"),
+	ComposedReactiveTest():
+		ReactiveTest("square-test"),
 		s("square", this),
+		t("twice", this),
 		x(this, "x"),
-		x2(this, "x2")
+		y(this, "y")
 	{
 		connect(x, s.x);
-		connect(s.x2, x2);
+		connect(s.x2, t.x);
+		connect(t.twox, y);
 	}
 
 	void test() override {
 		x = 2;
 		step();
-		check(x2, 4);
+		check(y, 8);
+
 		x = 0;
 		step();
-		check(x2, 0);
+		check(y, 0);
+
 		x = 1;
 		step();
-		check(x2, 1);
+		check(y, 2);
 	}
 };
 
 int main() {
-	return SimpleReactiveTest().run();
+	return ComposedReactiveTest().run();
 }
 
 

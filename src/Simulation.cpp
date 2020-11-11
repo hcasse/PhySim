@@ -103,7 +103,7 @@ void Simulation::step() {
 	while(not _todo.empty()) {
 		auto m = *_todo.begin();
 		_todo.erase(m);
-		_mon->err() << "TRACE: updating " << m->fullname() << endl;
+		_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
 		m->update();
 	}
 

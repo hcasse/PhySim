@@ -26,14 +26,14 @@ protected:
 	}
 };
 
-class SimpleReactiveTest: public ReactiveTest {
+class FailingTest: public ReactiveTest {
 public:
 	Square s;
 	OutputPort<int> x;
 	InputPort<int> x2;
 
-	SimpleReactiveTest():
-		ReactiveTest("simple-reactive-test"),
+	FailingTest():
+		ReactiveTest("failing-test"),
 		s("square", this),
 		x(this, "x"),
 		x2(this, "x2")
@@ -48,7 +48,8 @@ public:
 		check(x2, 4);
 		x = 0;
 		step();
-		check(x2, 0);
+		check(x2, 2);
+		check(x2, 1);
 		x = 1;
 		step();
 		check(x2, 1);
@@ -56,7 +57,7 @@ public:
 };
 
 int main() {
-	return SimpleReactiveTest().run();
+	return FailingTest().run();
 }
 
 

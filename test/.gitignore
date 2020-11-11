@@ -2,3 +2,5 @@
 /Makefile
 /cmake_install.cmake
 /reactive
+/composed_reactive
+/failing
