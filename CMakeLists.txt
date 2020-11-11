@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(Sat)
-
-set(SOURCES
-	"src/Model.cpp"
-	"src/Monitor.cpp"
-	"src/Port.cpp"
-	"src/Simulation.cpp"
-	"main.cpp"
-)
+project(PhySim)
 
 include_directories("include")
-add_executable(sat ${SOURCES})
+
+add_subdirectory("src")
+add_subdirectory("test")
+
+add_executable("sim" "main.cpp")
+target_link_libraries("sim" "physim")
+

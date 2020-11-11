@@ -38,7 +38,6 @@ protected:
 	void step() { _sim->step(); }
 	template <class T, int N>
 	inline void check(InputPort<T, N>& x, int ex, int i = 0) {
-		step();
 		if(x[i] != ex) { err() << "failed: expected " << ex << ", got " << x << endl; _error_cnt++; }
 	}
 private:
