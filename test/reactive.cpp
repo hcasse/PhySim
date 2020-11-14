@@ -40,7 +40,6 @@ public:
 	{
 		connect(x, s.x);
 		connect(s.x2, x2);
-		//setTracing(true);
 	}
 
 	void test() override {
@@ -56,9 +55,6 @@ public:
 	}
 };
 
-int main() {
-	return SimpleReactiveTest().run();
-}
-
+PHYSIM_RUN(SimpleReactiveTest);
 
 

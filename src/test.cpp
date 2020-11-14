@@ -30,19 +30,16 @@ namespace physim {
  * @param name	Test name.
  */
 ReactiveTest::ReactiveTest(string name)
-	: ComposedModel(name), _sim(nullptr), _tracing(false), _failed(false), _error_cnt(0)
+	: ApplicationModel(name), _failed(false), _error_cnt(0)
 	{ }
 
 /**
  * Run the current test: this function prepares a simulation and call
  * the @ref test() function to perform the test.
  */
-int ReactiveTest::run() {
-	_sim = new Simulation(*this);
-	_sim->setTracing(_tracing);
+int ReactiveTest::perform() {
 	_error_cnt = 0;
 	_failed = false;
-	_sim->start();
 	err() << "launching " << name() << endl;
 	test();
 	if(_failed)
@@ -51,8 +48,6 @@ int ReactiveTest::run() {
 		err() << "Success !" << endl;
 	else
 		err() << "Failed: " << _error_cnt << " error(s) found!" << endl;
-	delete _sim;
-	_sim = nullptr;
 	return _error_cnt;
 }
 
@@ -74,7 +69,7 @@ int ReactiveTest::run() {
 void ReactiveTest::step() {
 	if(_failed)
 		_error_cnt++;
-	_sim->step();
+	sim().step();
 	_failed = false;
 }
 
@@ -107,23 +102,18 @@ void ReactiveTest::step() {
  * @param duration	Duration of the test.
  */
 PeriodicTest::PeriodicTest(string name, PeriodicModel& model, duration_t duration):
-	ComposedModel(name),
+	ApplicationModel(name),
 	_model(model),
 	_duration(duration),
-	_sim(nullptr),
-	_failed(false),
-	_tracing(false)
+	_failed(false)
 	{ }
 
 /**
  * Perform the test.
  * @return	0 for success, non-0 else (can be passed as return of main function).
  */
-int PeriodicTest::run() {
-	_sim = new Simulation(*this);
-	_sim->setTracing(_tracing);
+int PeriodicTest::perform() {
 	_failed = false;
-	_sim->start();
 	err() << "Launching " << name() << endl;
 	while(not _failed and date() < _duration) {
 		sim().step();

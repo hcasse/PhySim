@@ -87,12 +87,18 @@ void Simulation::run() {
 void Simulation::run(duration_t duration) {
 	start();
 	_state = RUNNING;
+	if(_tracing)
+		_mon->err() << "TRACE: simulation running." << endl;
 	while(_state == RUNNING && duration != 0) {
-		step();
+		//cerr << "DEBUG: step " << _date << endl;
+		advance();
 		duration--;
 	}
-	if(_state == RUNNING)
+	if(_state == RUNNING) {
 		_state = PAUSED;
+		if(_tracing)
+			_mon->err() << "TRACE: simulation paused." << endl;
+	}
 }
 
 /**
@@ -103,7 +109,18 @@ void Simulation::runUntil(date_t date) {
 	start();
 	_state = RUNNING;
 	while(_state == RUNNING && _date < date)
-		step();
+		advance();
+	if(_state == RUNNING)
+		_state = PAUSED;
+}
+
+/**
+ * Perform one step of simulation, that is, simulate until the simulation
+ * is stopped, or it stays model to update.
+ */
+void Simulation::step() {
+	_state = RUNNING;
+	advance();
 	if(_state == RUNNING)
 		_state = PAUSED;
 }
@@ -112,8 +129,7 @@ void Simulation::runUntil(date_t date) {
  * Perform one step of simulation, that is, simulate until the simulation
  * is stopped, or it stays model to update.
  */
-void Simulation::step() {
-	_state = RUNNING;
+void Simulation::advance() {
 
 	// pump read dates
 	while(not _sched.empty() and _sched.top().at == _date and _state != STOPPED) {
@@ -132,8 +148,6 @@ void Simulation::step() {
 
 	// next date
 	_date++;
-	if(_state == RUNNING)
-		_state = PAUSED;
 }
 
 
@@ -154,6 +168,7 @@ void Simulation::trigger(Model& model) {
  * @param at		Date of trigger.
  */
 void Simulation::schedule(Model& model, date_t at) {
+	//cerr << "DEBUG: " << _date << ": " << model.fullname() << " scheduled at " << at << endl;
 	if(at <= _date)
 		_mon->warn("model " + model.fullname() + " ask scheduling at date in the past: " + to_string(at));
 	else

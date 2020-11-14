@@ -3,6 +3,7 @@ set(SOURCES
 	"Monitor.cpp"
 	"Port.cpp"
 	"Simulation.cpp"
+	"std.cpp"
 	"test.cpp"
 )
 

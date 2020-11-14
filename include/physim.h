@@ -170,12 +170,7 @@ private:
 	inline T *getBuffer()
 		{ if(Port<T, N>::t == nullptr) Port<T, N>::t = new T[N]; return Port<T, N>::t; }
 	inline const T& get(int i) const { return Port<T, N>::t[i]; }
-	inline void set(int i, const T& x) {
-		if(Port<T, N>::t[i] != x) {
-			Port<T, N>::t[i] = x;
-			for(auto p: _links) p->touch();
-		}
-	}
+	inline void set(int i, const T& x);
 	vector<InputPort<T, N> *> _links;
 };
 
@@ -275,6 +270,8 @@ public:
 
 private:
 
+	void advance();
+
 	typedef enum {
 		STOPPED,
 		PAUSED,
@@ -303,6 +300,53 @@ private:
 
 inline date_t Model::date() const { return sim().date(); }
 
+template <class T, int N>
+inline void OutputPort<T, N>::set(int i, const T& x) {
+	if(Port<T, N>::t[i] != x) {
+		Port<T, N>::t[i] = x;
+		if(Port<T, N>::model().sim().tracing()) {
+			Port<T, N>::model().err() << "TRACE: " << Port<T, N>::model().sim().date()
+				<< ": port " << Port<T, N>::fullname();
+			if(N != 1)
+				Port<T, N>::model().err() <<  "[" << i << "]";
+			Port<T, N>::model().err() << " receives " << x << endl;
+		}
+		for(auto p: _links) p->touch();
+	}
+}
+
+class ApplicationModel: public ComposedModel {
+public:
+	ApplicationModel(string name);
+
+	int run(int argc = 1, char **argv = nullptr);
+	inline void setTracing(bool t) { _tracing = t; }
+
+protected:
+	virtual int perform() = 0;
+	virtual int parseOption(int& i, int argc, char **argv);
+	virtual void dumpOptions();
+	void errorOption(const string& msg);
+	inline Simulation& sim() const { return *_sim; }
+
+private:
+	Simulation *_sim;
+	bool _tracing;
+};
+
+
+class Simulate: public ApplicationModel {
+public:
+	Simulate(string name, duration_t d = 10);
+protected:
+	int perform() override;
+	int parseOption(int& i, int argc, char **argv) override;
+	void dumpOptions() override;
+private:
+	duration_t _d;
+};
+
+#define PHYSIM_RUN(C) int main(int argc, char **argv) { return C().run(argc, argv); }
 
 }	// physim
 

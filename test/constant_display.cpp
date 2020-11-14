@@ -6,6 +6,7 @@
  */
 
 #include <physim.h>
+#include <physim/std.h>
 #include <physim/test.h>
 using namespace physim;
 
@@ -31,33 +32,24 @@ private:
 	int s;
 };
 
-class SimplePeriodicTest: public PeriodicTest {
+class ConstantDisplayTest: public Simulate {
 public:
 	Accu a;
-	OutputPort<int> x;
-	InputPort<int> y;
+	Constant<int> one;
+	Display<int> disp;
 
-	SimplePeriodicTest():
-		PeriodicTest("simple-periodic-test", a, 10),
+	ConstantDisplayTest():
+		Simulate("constant-display-test"),
 		a("accu", 2, this),
-		x(this, "x"),
-		y(this, "y")
+		one(1, this),
+		disp("out", this)
 	{
-		connect(x, a.x);
-		connect(a.y, y);
-		//setTracing(true);
-	}
-
-	void init() override {
-		x = 1;
-	}
-
-	void test(date_t date) override {
-		check(y, date / 2);
+		connect(one.y, a.x);
+		connect(a.y, disp.x);
 	}
 };
 
-PHYSIM_RUN(SimplePeriodicTest)
+PHYSIM_RUN(ConstantDisplayTest)
 
 
 

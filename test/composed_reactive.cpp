@@ -77,9 +77,7 @@ public:
 	}
 };
 
-int main() {
-	return ComposedReactiveTest().run();
-}
+PHYSIM_RUN(ComposedReactiveTest)
 
 
 

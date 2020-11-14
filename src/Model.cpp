@@ -269,7 +269,163 @@ void ComposedModel::finalize(Simulation& sim) {
 }
 
 
+/**
+ * @class ApplicationModel
+ * Special composed model that may be run as an application.
+ *
+ * The following function may be specialized:
+ * * @ref perform() to provide the actual work.
+ * * @ref parseOption() to customize the options passed to the application.
+ * * @ref dumpOptions() to display possible argument options.
+ *
+ * An easy to use an ApplicationModel is with the macro PHYSIM_RUN. Let MyModel
+ * a model extending ApplicationModel, the following macro call replaces the
+ * main() function:
+ * @code
+ * PHYSIM_RUN(MyModel);
+ * @endcode
+ */
+
+/**
+ * Constructor.
+ * @param name	Name of the application.
+ */
+ApplicationModel::ApplicationModel(string name)
+	: ComposedModel(name), _sim(nullptr), _tracing(false)
+	{ }
+
+/**
+ * Run the application: manage the parameters, prepare a simulator and
+ * invoke the @ref run() method.
+ */
+int ApplicationModel::run(int argc, char **argv) {
+
+	// parse the arguments
+	for(int i = 1; i < argc; i++) {
+		auto r = parseOption(i, argc, argv);
+		if(r < 0)
+			return 0;
+		else if(r > 0)
+			return r;
+	}
+
+	// prepare the simulation
+	_sim = new Simulation(*this);
+	_sim->setTracing(_tracing);
+
+	// perform the simulation
+	_sim->start();
+	auto r = perform();
+	_sim->stop();
+
+	// finalize the simulation
+	delete _sim;
+	_sim = nullptr;
+	return r;
+}
+
+/**
+ * @fn int ApplicationModel::perform();
+ * Perform the simulation action.
+ * @return	0 for success, non-zero for error (as returned to the OS).
+ */
+
+
+/**
+ * Parse the given option.
+ * @param i		Current option index (increment it if the option requires an argument).
+ * @param argc	Argument count.
+ * @parma argv	Argument values.
+ * @return		0 for success, non-zero for failure (as returned to the OS).
+ */
+int ApplicationModel::parseOption(int& i, int argc, char **argv) {
+	auto opt = string(argv[i]);
+	if(opt == "-h" or opt == "--help") {
+		dumpOptions();
+		return -1;
+	}
+	else if(opt == "--tracing")
+		_tracing = true;
+	else {
+		errorOption("unknown option '" + opt + "'!");
+		return 1;
+	}
+	return 0;
+}
+
+/**
+ * Dump the option message.
+ */
+void ApplicationModel::dumpOptions() {
+	cerr << "Model simulation: " << name() << " [OPTIONS]" << endl << endl;
+	cerr << "OPTIONS includes:" << endl;
+	cerr << "-h, --help  display this message." << endl;
+	cerr << "--tracing   enable internal work tracing" << endl;
+}
+
+/**
+ * Display an option error.
+ * @param msg	Message to display.
+ */
+void ApplicationModel::errorOption(const string& msg) {
+	dumpOptions();
+	cerr << endl << "ERROR: " << msg << endl;
+}
+
+/**
+ * @fn Simulation& ApplicationModel::sim() const;
+ * Get the current simulation.
+ * @return	Current simulation.
+ */
+
+
+/**
+ * @class Simulate;
+ * An application model that run a simulation during some duration.
+ *
+ * It provides the following additional options:
+ * @param -d, --duration INT -- specify the duration in time unit.
+ */
+
+/**
+ * Build a simulate model application.
+ * @param name
+ */
+Simulate::Simulate(string name, duration_t d)
+	: ApplicationModel(name), _d(d) { }
+
+///
+int Simulate::perform() {
+	sim().run(_d);
+	return 0;
+}
+
+///
+int Simulate::parseOption(int& i, int argc, char **argv) {
+	string arg = argv[i];
+	if(arg == "-d" || arg == "--duration") {
+		i++;
+		if(i == argc) {
+			errorOption("-d or --duration requires an INT argument!");
+			return 1;
+		}
+		try {
+			_d = stoi(argv[i]);
+			return 0;
+		}
+		catch(invalid_argument&) {
+			errorOption("invalid duration: " + string(argv[i]));
+			return 1;
+		}
+	}
+	else
+		return ApplicationModel::parseOption(i, argc, argv);
+}
+
+///
+void Simulate::dumpOptions() {
+	ApplicationModel::dumpOptions();
+	cerr << "-d, --duration INT  perform during the given time (default " << _d << ")" << endl;
+}
+
 } // physim
-
-
-
