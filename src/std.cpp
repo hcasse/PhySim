@@ -18,6 +18,7 @@
  *  USA
  */
 
+#include <fstream>
 #include <physim/std.h>
 
 namespace physim {
@@ -68,6 +69,86 @@ namespace physim {
  * @param name		Name of the model.
  * @param out		Output stream to perform the display (default to cout).
  */
+
+
+/**
+ * @class Report: public ReactiveModel
+ * Generator of report.
+ *
+ * This class can connect several output port and to report the port values
+ * changes along time.
+ *
+ * Its output may be performed on any stream or to
+ * a file and follows the CSV format. The first line contains the name of
+ * the columns and the first column is the date following by the value of
+ * each port connected to the report.
+ */
+
+/**
+ * Constructor of a report to a stream or to cout.
+ * @param name		Report name.
+ * @param parent	Parent model.
+ * @param out		Output stream (default to cout).
+ */
+Report::Report(string name, ComposedModel *parent, ostream& out):
+	Model(name, parent), _out(&out) { }
+
+/**
+ * Constructor of a report to a named file.
+ * @param name		Name of the report.
+ * @param parent	Parent of the report.
+ * @param path		Path of the file to report to.
+ */
+Report::Report(string name, ComposedModel *parent, string path):
+	Model(name, parent), _out(nullptr), _path(path) { }
+
+///
+Report::~Report() {
+	for(auto r: _reps)
+		delete r;
+}
+
+/**
+ * @fn void Report::add(OutputPort<T, N>& port);
+ * Add the given output port for reporting.
+ * @param port	Added port.
+ */
+
+///
+void Report::start() {
+	if(_out == nullptr) {
+		_out = new ofstream(_path);
+		if(_out->fail())
+			fatal("cannot open '" + _path + "'");
+	}
+	(*_out) << "date";
+	for(auto r: _reps)
+		(*_out) << '\t' << r->name();
+	(*_out) << endl;
+}
+
+///
+void Report::stop() {
+	if(_path != "") {
+		delete _out;
+		_out = nullptr;
+	}
+}
+
+///
+void Report::update() {
+	(*_out) << date();
+	for(auto r: _reps) {
+		(*_out) << '\t';
+		r->print(*_out);
+	}
+	(*_out) << endl;
+}
+
+///
+void Report::propagate(const AbstractPort& port) {
+	sim().triggerLast(*this);
+}
 
 } // physim
 

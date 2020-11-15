@@ -159,6 +159,15 @@ void Simulation::advance() {
 		m->update();
 	}
 
+	// trigger last models
+	while(not _last.empty()) {
+		auto m = *_last.begin();
+		_last.erase(m);
+		if(tracing())
+			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+		m->update();
+	}
+
 	// next date
 	_date++;
 }
@@ -173,6 +182,17 @@ void Simulation::trigger(Model& model) {
 	if(not isStopped())
 		_todo.insert(&model);
 }
+
+
+/**
+ * Ask the model to be triggered in an epilog phase.
+ * Typical use is for reporting once the system is stable.
+ * @param model	Model to update.
+ */
+void Simulation::triggerLast(Model& model) {
+	_todo.insert(&model);
+}
+
 
 /**
  * Schedule the trigger of the given model at the given date.

@@ -87,6 +87,7 @@ public:
 	inline date_t date() const;
 	inline bool simEnabled() const { return _sim != nullptr; }
 	inline const vector<AbstractPort *>& ports() const { return _ports; }
+	inline ComposedModel *parent() const { return _parent; }
 
 	virtual void init();
 	virtual void update();
@@ -238,12 +239,6 @@ class ComposedModel: public Model {
 	friend class Model;
 public:
 	ComposedModel(string name, ComposedModel *parent = nullptr);
-protected:
-	void init() override;
-	void propagate(const AbstractPort& port) override;
-	void start() override;
-	void stop() override;
-	void finalize(Simulation& sim) override;
 
 	template <class T, int N> void connect(InputPort<T, N>& ip, OutputPort<T, N>& op)
 		{ ip._back = &op; }
@@ -253,6 +248,14 @@ protected:
 		{ opt._back = &ops; }
 	template <class T, int N> void connect(OutputPort<T, N>& ops, InputPort<T, N>& ips)
 		{ ips._back = &ops; }
+
+protected:
+	void init() override;
+	void propagate(const AbstractPort& port) override;
+	void start() override;
+	void stop() override;
+	void finalize(Simulation& sim) override;
+
 private:
 	vector<Model *> subs;
 };
@@ -270,6 +273,7 @@ public:
 	void pause();
 	void stop();
 	void trigger(Model& model);
+	void triggerLast(Model& model);
 	void schedule(Model& model, date_t at);
 	inline date_t date() const { return _date; }
 
@@ -304,6 +308,7 @@ private:
 
 	Model& _top;
 	set<Model *> _todo;
+	set<Model *> _last;
 	priority_queue<Date> _sched;
 	date_t _date;
 	Monitor *_mon;

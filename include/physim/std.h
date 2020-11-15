@@ -56,20 +56,51 @@ protected:
 	ostream& _out;
 };
 
-class Report: public ReactiveModel {
+class Report: public Model {
+	class AbstractReporter {
+	public:
+		virtual ~AbstractReporter() { }
+		virtual string name() = 0;
+		virtual void print(ostream& out) = 0;
+	};
+
+	template <class T, int N = 1>
+	class Reporter: public AbstractReporter {
+	public:
+		Reporter(Report *report, OutputPort<T, N>& port)
+			: out(port), in(report, "") { }
+		string name() override { return out.fullname(); }
+		void print(ostream& out) {
+			out << in[0];
+			for(int i = 1; i < N; i++) out << ' ' << in[i];
+		}
+		OutputPort<T, N>& out;
+		InputPort<T, N> in;
+	};
+
 public:
 
-	Report(ComposedModel *parent, string name, ostream& out = cout);
-	Report(ComposedModel *parent, string name, string path);
+	Report(string name, ComposedModel *parent, ostream& out = cout);
+	Report(string name, ComposedModel *parent, string path);
+	~Report();
+
+	template <class T, int N>
+	void add(OutputPort<T, N>& port) {
+		auto r = new Reporter<T, N>(this, port);
+		_reps.push_back(r);
+		parent()->connect(port, r->in);
+	}
 
 protected:
 	void start() override;
 	void stop() override;
 	void update() override;
+	void propagate(const AbstractPort& port) override;
 
 private:
 	ostream *_out;
 	string _path;
+	vector<AbstractReporter *> _reps;
 };
 
 } // physim
