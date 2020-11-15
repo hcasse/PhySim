@@ -15,3 +15,6 @@ target_link_libraries("constant_display" ${MY_LIBS})
 
 add_executable("reporter" "reporter.cpp")
 target_link_libraries("reporter" ${MY_LIBS})
+
+add_executable("qtline" "qtline.cpp")
+target_link_libraries("qtline" ${MY_LIBS})

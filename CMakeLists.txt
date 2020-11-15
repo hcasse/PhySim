@@ -9,11 +9,13 @@ find_package(Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt5 COMPONENTS Charts REQUIRED)
 
 set(MY_LIBS
+	"physim"
 	Qt5::Widgets
-	Qt5::Charts
-	"physim")
+	Qt5::Charts)
 
 include_directories("include")
+add_definitions(${Qt5Widgets_DEFINITIONS} -fPIC)
+include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
 add_subdirectory("src")
 add_subdirectory("test")

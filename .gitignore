@@ -6,3 +6,5 @@
 /sat
 /sim
 /Makefile
+moc_predefs.h
+*_autogen

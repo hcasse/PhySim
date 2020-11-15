@@ -167,12 +167,12 @@ public:
 
 	class Accessor {
 	public:
-		inline Accessor(Port<T, N>& port, int index): p(port), i(index) { }
+		inline Accessor(OutputPort<T, N>& port, int index): p(port), i(index) { }
 		inline operator const T&() { return p.get(i); }
 		inline Accessor& operator=(const T& x)
 			{ p.set(i, x); return *this; }
 	private:
-		Port<T, N>& p;
+		OutputPort<T, N>& p;
 		int i;
 	};
 
