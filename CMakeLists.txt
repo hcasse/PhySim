@@ -8,15 +8,13 @@ project(PhySim)
 set(MY_LIBS "physim")
 
 if(NOT NO_QT)
-	set(CMAKE_AUTOMOC ON)
-	set(CMAKE_AUTORCC ON)
-	set(CMAKE_AUTOUIC ON)
+	#set(CMAKE_AUTOMOC ON)
+	#set(CMAKE_AUTORCC ON)
+	#set(CMAKE_AUTOUIC ON)
 	find_package(Qt5 COMPONENTS Widgets REQUIRED)
 	find_package(Qt5 COMPONENTS Charts REQUIRED)
 
-	list(APPEND MY_LIBS
-		Qt5::Widgets
-		Qt5::Charts)
+	set(QT_LIBS		Qt5::Widgets Qt5::Charts)
 	add_definitions(${Qt5Widgets_DEFINITIONS} -fPIC)
 	include_directories(${Qt5Widgets_INCLUDE_DIRS})
 endif()

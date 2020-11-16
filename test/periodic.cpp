@@ -22,6 +22,10 @@ public:
 	{ }
 protected:
 
+	void init() override {
+		y = s;
+	}
+
 	void update(date_t at) override {
 		s = s + x;
 		y = s;

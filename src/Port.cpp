@@ -46,6 +46,16 @@ AbstractPort::~AbstractPort() {
 }
 
 /**
+ * This function is called on output ports connected on periodic models
+ * to publish an internal update to connected models. The default
+ * implementation does nothing.
+ */
+void AbstractPort::publish() {
+	cerr << "DEBUG: default publish for " << fullname() << endl;
+}
+
+
+/**
  * @fn string AbstractPort::AbstractPort::name() const;
  * Get the name of the port.
  * @return Port name.

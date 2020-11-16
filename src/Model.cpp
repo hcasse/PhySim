@@ -164,6 +164,14 @@ ostream& Model::err() const {
 
 
 /**
+ * Called to let the output ports to publish their values to connected ports.
+ * The default implementation does nothing.
+ */
+void Model::publish() {
+}
+
+
+/**
  * @class ReactiveModel
  * A reactive model reacts immediately to any change on its input ports.
  * Just overload update() function to change its behavior.
@@ -226,10 +234,17 @@ void PeriodicModel::start() {
 void PeriodicModel::propagate(const AbstractPort& port) {
 }
 
-
+///
 void PeriodicModel::update() {
 	update(date());
 	sim().schedule(*this, date() + _period);
+}
+
+///
+void PeriodicModel::publish() {
+	for(auto p: ports())
+		if(p->mode() == OUT)
+			p->publish();
 }
 
 
@@ -279,6 +294,13 @@ void ComposedModel::finalize(Simulation& sim) {
 	for(auto m: subs)
 		m->finalize(sim);
 	Model::finalize(sim);
+}
+
+///
+void ComposedModel::publish() {
+	for(auto m: subs)
+		m->publish();
+	Model::publish();
 }
 
 

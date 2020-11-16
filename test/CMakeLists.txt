@@ -18,5 +18,8 @@ target_link_libraries("reporter" ${MY_LIBS})
 
 if(NOT NO_QT)
 	add_executable("qtline" "qtline.cpp")
-	target_link_libraries("qtline" ${MY_LIBS})
+	target_link_libraries("qtline" ${MY_LIBS} ${QT_LIBS})
 endif()
+
+add_executable("pingpong" "pingpong.cpp")
+target_link_libraries("pingpong" ${MY_LIBS})

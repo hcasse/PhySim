@@ -75,6 +75,7 @@ void Simulation::start() {
 		if(tracing())
 			_mon->err() << "TRACE: initializing the simulation." << endl;
 		_top.init();
+		_top.publish();
 		if(tracing())
 			_mon->err() << "TRACE: simulation paused." << endl;
 		_state = PAUSED;
@@ -143,12 +144,24 @@ void Simulation::step() {
  * is stopped, or it stays model to update.
  */
 void Simulation::advance() {
+	//cerr << "DEBUG: at " << _date << endl;
+	//cerr << "DEBUG: schedule = " << _sched.top().at << ": " << _sched.top().model->fullname() << endl;
 
 	// pump read dates
-	while(not _sched.empty() and _sched.top().at == _date and _state != STOPPED) {
-		_todo.insert(_sched.top().model);
+	while(not _sched.empty() and _sched.top().at == _date) {
+		_pers.push_back(_sched.top().model);
 		_sched.pop();
 	}
+
+	// perform periodic models
+	for(auto p: _pers) {
+		if(tracing())
+			_mon->err() << "TRACE: " << _date << ": updating " << p->fullname() << endl;
+		p->update();
+	}
+	for(auto p: _pers)
+		p->publish();
+	_pers.clear();
 
 	// pump models that needs to be updated
 	while(not _todo.empty() and _state != STOPPED) {

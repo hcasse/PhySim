@@ -42,7 +42,7 @@ public:
 	Constant<int> one;
 
 	ReporterTest():
-		Simulate("constant-display-test"),
+		Simulate("reporter-test"),
 		a("accu", 2, this),
 		r("report", this, "reporter.csv"),
 		one(1, this)

@@ -92,6 +92,7 @@ public:
 	virtual void init();
 	virtual void update();
 	virtual void propagate(const AbstractPort& port);
+	virtual void publish();
 
 	void info(const string& msg) const;
 	void warn(const string& msg) const;
@@ -114,6 +115,28 @@ private:
 	mutable string _full_name;
 };
 
+class ReactiveModel: public Model {
+public:
+	ReactiveModel(string name, ComposedModel *parent = nullptr);
+protected:
+	void propagate(const AbstractPort& port) override;
+};
+
+class PeriodicModel: public Model {
+	friend class Simulation;
+public:
+	PeriodicModel(string name, duration_t period = 1, ComposedModel *parent = nullptr);
+	PeriodicModel(string name, ComposedModel *parent = nullptr);
+	inline duration_t period() const { return _period; }
+protected:
+	void start() override;
+	void propagate(const AbstractPort& port) override;
+	void update();
+	virtual void update(date_t date) = 0;
+	void publish() override;
+private:
+	duration_t _period;
+};
 
 class AbstractPort {
 	friend class Model;
@@ -129,6 +152,7 @@ public:
 	inline bool isLinked() const { return _back != nullptr; }
 	AbstractPort *source();
 	string fullname() const;
+	virtual void publish();
 protected:
 	virtual void finalize(Monitor& mon);
 private:
@@ -161,9 +185,19 @@ class OutputPort: public Port<T, N> {
 	friend class InputPort<T, N>;
 public:
 	OutputPort(Model *parent, string name)
-		: Port<T, N>(parent, name, OUT) { }
-	~OutputPort()
-		{ if(not Port<T, N>::isLinked() and Port<T, N>::t != nullptr) delete [] Port<T, N>::t; }
+		: Port<T, N>(parent, name, OUT), buf(new T[N]), _updated(false) { Port<T, N>::t = buf; }
+	OutputPort(ComposedModel *parent, string name)
+		: Port<T, N>(parent, name, OUT), buf(nullptr), _updated(false) { }
+	OutputPort(PeriodicModel *parent, string name)
+		: Port<T, N>(parent, name, OUT), buf(new T[N]), _updated(true) { Port<T, N>::t = new T[N]; }
+	~OutputPort() {
+		if(not Port<T, N>::isLinked()) {
+			if(buf != Port<T, N>::t)
+				delete [] Port<T, N>::t;
+			if(buf != nullptr)
+				delete [] buf;
+		}
+	}
 
 	class Accessor {
 	public:
@@ -180,12 +214,41 @@ public:
 	inline Accessor operator*() { return Accessor(*this, 0); }
 	inline Accessor operator[](int i) { return Accessor(*this, i); }
 
+	void publish() override {
+		if(_updated) {
+			for(int i = 0; i < N; i++)
+				buf[i] = Port<T, N>::t[i];
+			propagate();
+			_updated = false;
+		}
+	}
+
 private:
-	inline T *getBuffer()
-		{ if(Port<T, N>::t == nullptr) Port<T, N>::t = new T[N]; return Port<T, N>::t; }
+	inline bool isDelayed() const { return buf != Port<T, N>::t; }
+	inline T *getBuffer() { if(buf == nullptr) Port<T, N>::t = buf = new T[N]; return buf; }
 	inline const T& get(int i) const { return Port<T, N>::t[i]; }
-	inline void set(int i, const T& x);
+	inline void propagate();
+
+	inline void set(int i, const T& x) {
+		if(Port<T, N>::t[i] != x) {
+			Port<T, N>::t[i] = x;
+			if(Port<T, N>::model().sim().tracing()) {
+				Port<T, N>::model().err() << "TRACE: " << Port<T, N>::model().sim().date()
+					<< ": port " << Port<T, N>::fullname();
+				if(N != 1)
+					Port<T, N>::model().err() <<  "[" << i << "]";
+				Port<T, N>::model().err() << " receives " << x << endl;
+			}
+			if(isDelayed())
+				_updated = true;
+			else
+				propagate();
+		}
+	}
+
 	vector<InputPort<T, N> *> _links;
+	T *buf;
+	bool _updated;
 };
 
 
@@ -214,27 +277,6 @@ private:
 };
 
 
-class ReactiveModel: public Model {
-public:
-	ReactiveModel(string name, ComposedModel *parent = nullptr);
-protected:
-	void propagate(const AbstractPort& port) override;
-};
-
-class PeriodicModel: public Model {
-public:
-	PeriodicModel(string name, duration_t period = 1, ComposedModel *parent = nullptr);
-	PeriodicModel(string name, ComposedModel *parent = nullptr);
-	inline duration_t period() const { return _period; }
-protected:
-	void start() override;
-	void propagate(const AbstractPort& port) override;
-	void update();
-	virtual void update(date_t data) = 0;
-private:
-	duration_t _period;
-};
-
 class ComposedModel: public Model {
 	friend class Model;
 public:
@@ -255,6 +297,7 @@ protected:
 	void start() override;
 	void stop() override;
 	void finalize(Simulation& sim) override;
+	void publish() override;
 
 private:
 	vector<Model *> subs;
@@ -303,13 +346,14 @@ private:
 		inline bool operator==(const Date& d) const
 			{ return at == d.at and  model == d.model; }
 		inline bool operator<(const Date& d) const
-			{ return at < d.at or (at == d.at && model < d.model); }
+			{ return at > d.at or (at == d.at && model < d.model); }
 	};
 
 	Model& _top;
 	set<Model *> _todo;
 	set<Model *> _last;
 	priority_queue<Date> _sched;
+	vector<Model *> _pers;
 	date_t _date;
 	Monitor *_mon;
 	bool _mon_alloc, _tracing;
@@ -319,19 +363,8 @@ private:
 inline date_t Model::date() const { return sim().date(); }
 
 template <class T, int N>
-inline void OutputPort<T, N>::set(int i, const T& x) {
-	if(Port<T, N>::t[i] != x) {
-		Port<T, N>::t[i] = x;
-		if(Port<T, N>::model().sim().tracing()) {
-			Port<T, N>::model().err() << "TRACE: " << Port<T, N>::model().sim().date()
-				<< ": port " << Port<T, N>::fullname();
-			if(N != 1)
-				Port<T, N>::model().err() <<  "[" << i << "]";
-			Port<T, N>::model().err() << " receives " << x << endl;
-		}
-		for(auto p: _links) p->touch();
-	}
-}
+inline void OutputPort<T, N>::propagate()
+	{ for(auto p: _links) p->touch(); }
 
 class ApplicationModel: public ComposedModel {
 public:
