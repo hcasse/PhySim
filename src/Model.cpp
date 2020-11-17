@@ -94,6 +94,16 @@ void Model::finalize(Simulation& sim) {
 	}
 }
 
+
+/**
+ * Add an abstract value.
+ * @param val	Added value.
+ */
+void Model::add(AbstractValue *val) {
+	_vals.push_back(val);
+}
+
+
 /**
  * Get the dot-separated full name of the model.
  * @return 	Full name.

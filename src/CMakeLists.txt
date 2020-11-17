@@ -5,6 +5,7 @@ set(SOURCES
 	"Simulation.cpp"
 	"std.cpp"
 	"test.cpp"
+	"Value.cpp"
 )
 
 if(NOT NO_QT)

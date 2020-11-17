@@ -20,6 +20,7 @@
 #ifndef INCLUDE_PHYSIM_H_
 #define INCLUDE_PHYSIM_H_
 
+#include <initializer_list>
 #include <iostream>
 #include <queue>
 #include <set>
@@ -44,6 +45,12 @@ typedef enum {
 	IN,
 	OUT
 } mode_t;
+
+typedef enum {
+	PORT,
+	PARAM,
+	STATE
+} flavor_t;
 
 class Monitor {
 public:
@@ -74,7 +81,34 @@ public:
 class Type { };
 template <class T> const Type&type_of() { static Type t; return t; }
 
+class AbstractValue {
+public:
+	AbstractValue(Model *_parent, string name, Type& type, int size, flavor_t flavor);
+	virtual ~AbstractValue();
+	virtual bool parse(string text);
+	virtual void print(ostream& out);
+	virtual bool read(istream& in);
+	virtual void write(ostream& out);
+	virtual void init();
+
+	inline Model *parent() const { return _parent; }
+	inline string name() const { return _name; }
+	inline Type& type() const { return _type; }
+	inline flavor_t flavor() const { return _flavor; }
+	inline int size() const { return _size; }
+	string fullname();
+
+private:
+	Model *_parent;
+	string _name;
+	Type& _type;
+	flavor_t _flavor;
+	int _size;
+	mutable string _full_name;
+};
+
 class Model {
+	friend class AbstractValue;
 	friend AbstractPort;
 	friend class Simulation;
 	friend class ComposedModel;
@@ -86,6 +120,7 @@ public:
 	inline Simulation& sim() const { return *_sim; }
 	inline date_t date() const;
 	inline bool simEnabled() const { return _sim != nullptr; }
+	inline bool isSimulating() const;
 	inline const vector<AbstractPort *>& ports() const { return _ports; }
 	inline ComposedModel *parent() const { return _parent; }
 
@@ -108,10 +143,12 @@ protected:
 	virtual void finalize(Simulation& sim);
 
 private:
+	void add(AbstractValue *val);
 	string _name;
 	ComposedModel *_parent;
 	Simulation *_sim;
 	vector<AbstractPort *> _ports;
+	vector<AbstractValue *> _vals;
 	mutable string _full_name;
 };
 
@@ -361,10 +398,61 @@ private:
 };
 
 inline date_t Model::date() const { return sim().date(); }
-
 template <class T, int N>
 inline void OutputPort<T, N>::propagate()
 	{ for(auto p: _links) p->touch(); }
+bool Model::isSimulating() const { return _sim != nullptr and not _sim->isStopped(); }
+
+template <class T, int N>
+class Parameter: public AbstractValue {
+public:
+	inline Parameter(Model *parent, string name)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM) { }
+	inline Parameter(Model *parent, string name, const T& x)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
+		{ set(x); }
+	inline Parameter(Model *parent, string name, const initializer_list<T>& l)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
+		{ set(l); }
+	inline operator const T&() const { return t[0]; }
+	inline const T& operator*() const { return t[0]; }
+	inline const T& operator[](int i) const { return t[i]; }
+
+	inline void set(const T& x)
+		{ if(not parent()->isSimulating()) for(int i = 0; i < N; i++) t[i] = x; }
+	inline void set(const initializer_list<T>& l)
+	{ if(not parent()->isSimulating()) { int i = 0; for(const auto& x: l) { t[i] = x; i++; } } }
+
+private:
+	T t[N];
+};
+
+template <class T, int N>
+class State: public AbstractValue {
+public:
+	inline State(Model *parent, string name)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM) { }
+	inline State(Model *parent, string name, const T& x)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
+		{ for(int i = 0; i < N; i++) it[i] = x; }
+	inline State(Model *parent, string name, const initializer_list<T>& l)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
+		{ auto i = 0; for(const auto& x: l) { it[i] = x; i++; } }
+
+	inline operator const T&() const { return t[0]; }
+	inline const T& operator*() const { return t[0]; }
+	inline const T& operator[](int i) const { return t[i]; }
+
+	inline operator T&() { return t[0]; }
+	inline T& operator*() { return t[0]; }
+	inline T& operator[](int i) { return t[i]; }
+
+	virtual void init() { for(int i = 0; i < N; i++) t[i] = it[i]; }
+
+private:
+	T t[N], it[N];
+};
+
 
 class ApplicationModel: public ComposedModel {
 public:
