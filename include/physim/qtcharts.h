@@ -78,6 +78,13 @@ private:
 	int _color;
 };
 
+class QtSimulate: public ApplicationModel {
+public:
+	QtSimulate(string name);
+protected:
+	int perform() override;
+};
+
 } // physim
 
 #endif /* INCLUDE_PHYSIM_QTCHARTS_H_ */

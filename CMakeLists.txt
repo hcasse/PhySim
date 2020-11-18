@@ -5,8 +5,6 @@ project(PhySim)
 # uncomment to remove Qt use
 #set(NO_QT ON)
 
-set(MY_LIBS "physim")
-
 if(NOT NO_QT)
 	#set(CMAKE_AUTOMOC ON)
 	#set(CMAKE_AUTORCC ON)

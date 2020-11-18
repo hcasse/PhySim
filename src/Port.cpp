@@ -54,6 +54,24 @@ void AbstractPort::publish() {
 	cerr << "DEBUG: default publish for " << fullname() << endl;
 }
 
+/**
+ * Test if the port supports the expression of its content as real.
+ * Default implementation returns false.
+ * @return	True if the port data can be expressed as real value, false.
+ */
+bool AbstractPort::supportsReal() {
+	return false;
+}
+
+/**
+ * Get the port indexed by i as a real value (if possible).
+ * @param i		Index of the accessed value (default 0).
+ * @return		Value of the port (corresponding at the given index for array port).
+ */
+long double AbstractPort::asReal(int i) {
+	return 0;
+}
+
 
 /**
  * @fn string AbstractPort::AbstractPort::name() const;

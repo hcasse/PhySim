@@ -7,10 +7,12 @@ set(SOURCES
 	"test.cpp"
 	"Value.cpp"
 )
+add_library(physim STATIC ${SOURCES})
 
 if(NOT NO_QT)
 	include_directories(${Qt5Charts_INCLUDE_DIRS})
-	list(APPEND SOURCES "qtcharts.cpp")
+	set(QT_SOURCES "qtcharts.cpp")
+	QT5_WRAP_CPP(QT_SOURCES "physim_qt.h" )
+	add_library(physim_qt STATIC ${QT_SOURCES})
 endif()
 
-add_library(physim STATIC ${SOURCES})

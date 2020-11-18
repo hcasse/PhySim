@@ -78,7 +78,6 @@ void Model::start() {
  * @param sim	Current simulator.
  */
 void Model::stop() {
-	_sim = nullptr;
 }
 
 /**

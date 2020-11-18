@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+#include <physim/type.h>
+
 namespace physim {
 
 using namespace std;
@@ -37,20 +39,6 @@ class Model;
 class Simulation;
 template <class T, int N> class InputPort;
 template <class T, int N> class OutputPort;
-
-typedef unsigned long long date_t;
-typedef unsigned long long duration_t;
-
-typedef enum {
-	IN,
-	OUT
-} mode_t;
-
-typedef enum {
-	PORT,
-	PARAM,
-	STATE
-} flavor_t;
 
 class Monitor {
 public:
@@ -77,9 +65,6 @@ public:
 	void fatal(const string& msg) override;
 };
 
-
-class Type { };
-template <class T> const Type&type_of() { static Type t; return t; }
 
 class AbstractValue {
 public:
@@ -124,6 +109,7 @@ public:
 	inline const vector<AbstractPort *>& ports() const { return _ports; }
 	inline ComposedModel *parent() const { return _parent; }
 
+	virtual bool isComposed() const { return false; }
 	virtual void init();
 	virtual void update();
 	virtual void propagate(const AbstractPort& port);
@@ -190,6 +176,8 @@ public:
 	AbstractPort *source();
 	string fullname() const;
 	virtual void publish();
+	virtual bool supportsReal();
+	virtual long double asReal(int i = 0);
 protected:
 	virtual void finalize(Monitor& mon);
 private:
@@ -211,7 +199,10 @@ public:
 	inline operator const T&() const { return t[0]; }
 	inline const T& operator*() const { return t[0]; }
 	inline const T& operator[](int i) const { return t[i]; }
-protected:
+
+	bool supportsReal() override { return supports_real<T>(); }
+	long double asReal(int i = 0) override { return as_real(t[i]); }
+
 protected:
 	T *t;
 };
@@ -327,6 +318,9 @@ public:
 		{ opt._back = &ops; }
 	template <class T, int N> void connect(OutputPort<T, N>& ops, InputPort<T, N>& ips)
 		{ ips._back = &ops; }
+
+	inline const vector<Model *>& subModels() const { return subs; }
+	bool isComposed() const override { return true; }
 
 protected:
 	void init() override;
