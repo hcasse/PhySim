@@ -250,12 +250,12 @@ public:
 			_updated = false;
 		}
 	}
+	inline void propagate();
 
 private:
 	inline bool isDelayed() const { return buf != Port<T, N>::t; }
 	inline T *getBuffer() { if(buf == nullptr) Port<T, N>::t = buf = new T[N]; return buf; }
 	inline const T& get(int i) const { return Port<T, N>::t[i]; }
-	inline void propagate();
 
 	inline void set(int i, const T& x) {
 		if(Port<T, N>::t[i] != x) {

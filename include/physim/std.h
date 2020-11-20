@@ -31,7 +31,10 @@ public:
 	Constant(const T& y_, ComposedModel *parent)
 		: ReactiveModel(to_string(y_), parent), _y(y_), y(this, "y") { }
 protected:
-	void init() override { y = _y; }
+	void init() override {
+		y = _y;
+		y.propagate();
+	}
 private:
 	T _y;
 };

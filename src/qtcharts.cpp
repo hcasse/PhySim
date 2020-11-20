@@ -22,6 +22,8 @@
 #include <QSplitter>
 #include <QTreeView>
 #include <QFileSystemModel>
+#include <QSpinBox>
+#include <QLabel>
 
 #include "physim_qt.h"
 
@@ -380,7 +382,8 @@ QtSimulateWindow::QtSimulateWindow(
 	app(application),
 	run_action(nullptr),
 	model(_model),
-	sim(_sim)
+	sim(_sim),
+	duration(20)
 {
 	// set stat display
 	auto chart = new Chart();
@@ -420,6 +423,16 @@ void QtSimulateWindow::createActions() {
 	connect(run_action, &QAction::triggered, this, &QtSimulateWindow::do_run);
 	sim_menu->addAction(run_action);
 	sim_bar->addAction(run_action);
+
+	auto duration_label = new QLabel("  Duration:");
+	sim_bar->addWidget(duration_label);
+	auto duration_box = new QSpinBox();
+	duration_box->setMinimum(0);
+	duration_box->setMaximum(INT_MAX);
+	duration_box->setValue(duration);
+	sim_bar->addWidget(duration_box);
+	connect(duration_box, QOverload<int>::of(&QSpinBox::valueChanged), this, &QtSimulateWindow::durationChanged);
+
 }
 
 ///
@@ -429,14 +442,18 @@ void QtSimulateWindow::run() {
 }
 
 ///
+void QtSimulateWindow::durationChanged(int i) {
+	duration = i;
+}
+
+///
 void QtSimulateWindow::do_run() {
 
 	// free previous data
 	auto chart = view.chart();
 	chart->removeAllSeries();
-	for(auto s: stats) {
+	for(auto s: stats)
 		delete s;
-	}
 	stats.clear();
 
 	// prepare the data
@@ -447,7 +464,6 @@ void QtSimulateWindow::do_run() {
 	}
 
 	// generate the graph
-	date_t duration = 20;
 	sim->stop();
 	sim->start();
 	for(auto s: stats)

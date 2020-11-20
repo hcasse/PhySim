@@ -100,6 +100,7 @@ public:
 	void run();
 private slots:
 	void do_run();
+	void durationChanged(int i);
 private:
 	void createActions();
 	LineChartView view;
@@ -109,6 +110,7 @@ private:
 	Selector selector;
 	vector<Stat *> stats;
 	Simulation *sim;
+	duration_t duration;
 };
 
 #endif /* PHYSIM_QT_H_ */

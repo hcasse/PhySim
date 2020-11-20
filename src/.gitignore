@@ -2,3 +2,14 @@
 /Makefile
 /cmake_install.cmake
 /libphysim.a
+/libphysim_qt.a
+/moc_Model.cpp_parameters
+/moc_Monitor.cpp_parameters
+/moc_Port.cpp_parameters
+/moc_Simulation.cpp_parameters
+/moc_Value.cpp_parameters
+/moc_physim_qt.cpp
+/moc_physim_qt.cpp_parameters
+/moc_qtcharts.cpp_parameters
+/moc_std.cpp_parameters
+/moc_test.cpp_parameters

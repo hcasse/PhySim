@@ -76,6 +76,15 @@ void Simulation::start() {
 			_mon->err() << "TRACE: initializing the simulation." << endl;
 		_top.init();
 		_top.publish();
+
+		while(not _todo.empty() and _state != STOPPED) {
+			auto m = *_todo.begin();
+			_todo.erase(m);
+			if(tracing())
+				_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+			m->update();
+		}
+
 		if(tracing())
 			_mon->err() << "TRACE: simulation paused." << endl;
 		_state = PAUSED;
@@ -192,8 +201,10 @@ void Simulation::advance() {
  */
 void Simulation::trigger(Model& model) {
 	//_mon->err() << "DEBUG: state = " << _state << endl;
-	if(not isStopped())
-		_todo.insert(&model);
+	//if(not isStopped())
+	_todo.insert(&model);
+	if(tracing())
+		_mon->err() << "TRACE: " << date() << ": trigger " << model.fullname() << endl;
 }
 
 

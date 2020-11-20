@@ -280,8 +280,13 @@ void ComposedModel::propagate(const AbstractPort& port) {
 ///
 void ComposedModel::init() {
 	Model::init();
-	for(auto m: subs)
+	if(sim().tracing())
+		err() << "TRACE: " << date() << ": init " << fullname() << endl;
+	for(auto m: subs) {
+		if(sim().tracing())
+			err() << "TRACE: " << date() << ": init " << m->fullname() << endl;
 		m->init();
+	}
 }
 
 ///

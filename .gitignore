@@ -1,5 +1,5 @@
 /CMakeCache.txt
-/CMakeFiles/
+CMakeFiles/
 /.cproject
 /.project
 /cmake_install.cmake
@@ -10,3 +10,5 @@ moc_predefs.h
 *_autogen
 /autodoc
 /doxygen.log
+cmake_clean.cmake
+UE34\ -\ sol

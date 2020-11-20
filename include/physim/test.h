@@ -32,9 +32,15 @@ protected:
 	int perform() override ;
 	void step();
 	template <class T, int N>
-	inline void check(InputPort<T, N>& x, int ex, int i = 0) {
+	inline void check(InputPort<T, N>& x, T ex, int i = 0) {
 		if(x[i] != ex) { err() << "failed: expected " << ex << ", got " << x << endl; _failed = true; }
 	}
+
+	template <class T, int N>
+	inline void checkApprox(InputPort<T, N>& x, T ex, int i = 0, long double prec = 1e-5) {
+		if(fabs(x[i] - ex) > prec) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
+	}
+
 private:
 	bool _failed;
 	int _error_cnt;
@@ -47,6 +53,11 @@ public:
 	template <class T, int N>
 	inline void check(InputPort<T, N>& x, int ex, int i = 0) {
 		if(x[i] != ex) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
+	}
+
+	template <class T, int N>
+	inline void checkApprox(InputPort<T, N>& x, T ex, int i = 0, long double prec = 1e-5) {
+		if(fabs(x[i] - ex) > prec) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
 	}
 
 protected:

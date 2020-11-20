@@ -129,10 +129,11 @@ int PeriodicTest::perform() {
 	_failed = false;
 	err() << "Launching " << name() << endl;
 	while(not _failed and date() < _duration) {
+		if(date() % _model.period() == 0)
+			test(date());
 		sim().step();
-		if(date() % _model.period() == 1)
-			test(date() - 1);
 	}
+	test(date());
 	if(_failed)
 		err() << "Failure at " << date() << endl;
 	else

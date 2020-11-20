@@ -21,6 +21,8 @@ include_directories("include")
 
 add_subdirectory("src")
 add_subdirectory("test")
+add_subdirectory("UE33")
+#add_subdirectory("UE34 - sol")
 
 add_executable("sim" "main.cpp")
 target_link_libraries("sim" ${MY_LIBS})
