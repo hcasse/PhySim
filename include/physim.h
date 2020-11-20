@@ -58,7 +58,7 @@ private:
 
 class TerminalMonitor: public Monitor {
 public:
-	using Monitor::Monitor;
+	inline TerminalMonitor(ostream& out = cout, ostream& err = cerr): Monitor(out, err) { }
 	void info(const string& msg) override;
 	void warn(const string& msg) override;
 	void error(const string& msg) override;
@@ -405,7 +405,7 @@ public:
 	inline Parameter(Model *parent, string name, const T& x)
 		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
 		{ set(x); }
-	inline Parameter(Model *parent, string name, const initializer_list<T>& l)
+	inline Parameter(Model *parent, string name, const std::initializer_list<T>& l)
 		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
 		{ set(l); }
 	inline operator const T&() const { return t[0]; }
@@ -414,7 +414,7 @@ public:
 
 	inline void set(const T& x)
 		{ if(not parent()->isSimulating()) for(int i = 0; i < N; i++) t[i] = x; }
-	inline void set(const initializer_list<T>& l)
+	inline void set(const std::initializer_list<T>& l)
 	{ if(not parent()->isSimulating()) { int i = 0; for(const auto& x: l) { t[i] = x; i++; } } }
 
 private:

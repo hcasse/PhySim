@@ -5,6 +5,9 @@ project(PhySim)
 # uncomment to remove Qt use
 #set(NO_QT ON)
 
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(NOT NO_QT)
 	#set(CMAKE_AUTOMOC ON)
 	#set(CMAKE_AUTORCC ON)
