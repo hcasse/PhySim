@@ -156,7 +156,14 @@ void Simulation::advance() {
 	//cerr << "DEBUG: at " << _date << endl;
 	//cerr << "DEBUG: schedule = " << _sched.top().at << ": " << _sched.top().model->fullname() << endl;
 
-	// pump read dates
+	// update the input ports of periodic models
+	while(not _sched.empty() and _sched.top().at == _date) {
+		for(auto p: _sched.top().model->ports())
+			if(p->mode() == IN)
+				;
+	}
+
+	// update the periodic models
 	while(not _sched.empty() and _sched.top().at == _date) {
 		_pers.push_back(_sched.top().model);
 		_sched.pop();

@@ -29,7 +29,7 @@ namespace physim {
  */
 
 Model::Model(string name, ComposedModel *parent)
-	: _name(name), _parent(parent), _sim(nullptr)
+	: _name(name), _parent(parent), _sim(nullptr), flags(0)
 {
 	if(_parent != nullptr)
 		_parent->subs.push_back(this);
@@ -100,6 +100,8 @@ void Model::finalize(Simulation& sim) {
  */
 void Model::add(AbstractValue *val) {
 	_vals.push_back(val);
+	if(val->flavor() == STATE)
+		flags |= HAS_STATE;
 }
 
 
@@ -217,7 +219,11 @@ void ReactiveModel::propagate(const AbstractPort& port) {
  * @param parent	Parent model (optional).
  */
 PeriodicModel::PeriodicModel(string name, duration_t period, ComposedModel *parent)
-	: Model(name, parent), _period(period) { }
+	: Model(name, parent), _period(period)
+{
+	flags |= IS_PERIODIC;
+	flags &= ~HAS_STATE;
+}
 
 /**
  * Construct a periodic model.
@@ -225,7 +231,11 @@ PeriodicModel::PeriodicModel(string name, duration_t period, ComposedModel *pare
  * @param parent	Parent model (optional).
  */
 PeriodicModel::PeriodicModel(string name, ComposedModel *parent)
-	: Model(name, parent), _period(1) { }
+	: Model(name, parent), _period(1)
+{
+	flags |= IS_PERIODIC;
+	flags &= ~HAS_STATE;
+}
 
 /**
  * @fn void PeriodicModel::update();

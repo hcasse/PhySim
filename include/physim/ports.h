@@ -70,26 +70,17 @@ class OutputPort: public Port<T, N> {
 	friend class InputPort<T, N>;
 public:
 	OutputPort(Model *parent, string name)
-		: Port<T, N>(parent, name, OUT), buf(new T[N]), _updated(false) { Port<T, N>::t = buf; }
+		: Port<T, N>(parent, name, OUT), _updated(false) { }
 	OutputPort(ComposedModel *parent, string name)
-		: Port<T, N>(parent, name, OUT), buf(nullptr), _updated(false) { }
+		: Port<T, N>(parent, name, OUT), _updated(false) { }
 	OutputPort(PeriodicModel *parent, string name)
-		: Port<T, N>(parent, name, OUT), buf(new T[N]), _updated(true) { Port<T, N>::t = new T[N]; }
-	~OutputPort() {
-		if(not Port<T, N>::isLinked()) {
-			if(buf != Port<T, N>::t)
-				delete [] Port<T, N>::t;
-			if(buf != nullptr)
-				delete [] buf;
-		}
-	}
+		: Port<T, N>(parent, name, OUT), _updated(true) { }
 
 	class Accessor {
 	public:
 		inline Accessor(OutputPort<T, N>& port, int index): p(port), i(index) { }
 		inline operator const T&() { return p.get(i); }
-		inline Accessor& operator=(const T& x)
-			{ p.set(i, x); return *this; }
+		inline Accessor& operator=(const T& x) { p.set(i, x); return *this; }
 	private:
 		OutputPort<T, N>& p;
 		int i;
@@ -99,23 +90,24 @@ public:
 	inline Accessor operator*() { return Accessor(*this, 0); }
 	inline Accessor operator[](int i) { return Accessor(*this, i); }
 
-	void publish() override {
+	inline void commit() {
 		if(_updated) {
-			for(int i = 0; i < N; i++)
-				buf[i] = Port<T, N>::t[i];
 			propagate();
 			_updated = false;
 		}
 	}
-	inline void propagate();
+
+	inline void propagate() { for(auto m: _trigger_list) Port<T, N>::model().sim().trigger(*m); }
 
 private:
-	inline bool isDelayed() const { return buf != Port<T, N>::t; }
-	inline T *getBuffer() { if(buf == nullptr) Port<T, N>::t = buf = new T[N]; return buf; }
+	inline void recordTrigger(Model *m) { _trigger_list.push_back(m); }
+	inline T *buffer() { if(Port<T, N>::t == nullptr) Port<T, N>::t = new T[N]; return Port<T, N>::t; }
+
 	inline const T& get(int i) const { return Port<T, N>::t[i]; }
 
 	inline void set(int i, const T& x) {
 		if(Port<T, N>::t[i] != x) {
+			_updated = true;
 			Port<T, N>::t[i] = x;
 			if(Port<T, N>::model().sim().tracing()) {
 				Port<T, N>::model().err() << "TRACE: " << Port<T, N>::model().sim().date()
@@ -124,15 +116,10 @@ private:
 					Port<T, N>::model().err() <<  "[" << i << "]";
 				Port<T, N>::model().err() << " receives " << x << endl;
 			}
-			if(isDelayed())
-				_updated = true;
-			else
-				propagate();
 		}
 	}
 
-	vector<InputPort<T, N> *> _links;
-	T *buf;
+	vector<Model *> _trigger_list;
 	bool _updated;
 };
 
@@ -141,8 +128,10 @@ template <class T, int N = 1>
 class InputPort: public Port<T, N> {
 public:
 	InputPort(Model *parent, string name)
-		: Port<T, N>(parent, name, IN), _needs_update(false) { }
-	inline void touch() { _needs_update = true; AbstractPort::model().propagate(*this); }
+		: Port<T, N>(parent, name, IN), buf(nullptr) { }
+
+	void update()
+		{ for(int i = 0; i < N; i++) Port<T, N>::t[i] = buf[i]; }
 
 private:
 	void finalize(Monitor& mon) override {
@@ -150,20 +139,22 @@ private:
 		if(p == nullptr)
 			Port<T, N>::model().error("input port " + Port<T, N>::fullname() + " is dangling!");
 		else {
+			Model *parent =  &Port<T, N>::model();
 			auto op = static_cast<OutputPort<T, N> *>(p);
-			Port<T, N>::t = op->getBuffer();
-			op->_links.push_back(this);
+			auto buf = op->buffer();
+			if(parent->isPeriodic())
+				Port<T, N>::t = new T[N];
+			else {
+				Port<T, N>::t = buf;
+				op->recordTrigger(parent);
+			}
 			if(Port<T, N>::model().sim().tracing())
-				Port<T, N>::model().err() << Port<T, N>::fullname() << " connected to " << op->Port<T, N>::fullname() << endl;
+				Port<T, N>::model().err() << Port<T, N>::fullname() << " connected to " << p->fullname() << endl;
 		}
 	}
 
-	bool _needs_update;
+	T *buf;
 };
-
-template <class T, int N>
-inline void OutputPort<T, N>::propagate()
-	{ for(auto p: _links) p->touch(); }
 
 } // physim
 

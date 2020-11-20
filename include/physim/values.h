@@ -83,27 +83,51 @@ private:
 template <class T, int N>
 class State: public AbstractValue {
 public:
-	inline State(Model *parent, string name)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM) { }
-	inline State(Model *parent, string name, const T& x)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
-		{ for(int i = 0; i < N; i++) it[i] = x; }
-	inline State(Model *parent, string name, const initializer_list<T>& l)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM)
-		{ auto i = 0; for(const auto& x: l) { it[i] = x; i++; } }
+	State(Model *parent, string name)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		{ complete(); }
+	State(Model *parent, string name, const T& x)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		{ for(int i = 0; i < N; i++) it[i] = x; complete(); }
+	State(Model *parent, string name, const initializer_list<T>& l)
+		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		{ auto i = 0; for(const auto& x: l) { it[i] = x; i++; } complete(); }
+	~State() { if(st != nullptr) delete [] st; }
 
 	inline operator const T&() const { return t[0]; }
 	inline const T& operator*() const { return t[0]; }
 	inline const T& operator[](int i) const { return t[i]; }
 
-	inline operator T&() { return t[0]; }
-	inline T& operator*() { return t[0]; }
-	inline T& operator[](int i) { return t[i]; }
+	class Access {
+	public:
+		inline Access(State<T, N>& s, int i): _s(s), _i(i) { }
+		inline operator const T&() const { return _s.get(_i); }
+		inline Access& operator=(const T& x) { _s.set(_i, x); return *this; }
+	private:
+		State<T, N>& _s;
+		int _i;
+	};
+
+	inline Access operator*() { return Access(*this, 0); }
+	inline Access operator[](int i) { return Access(*this, i); }
+	inline State<T, N>& operator=(const T& x) { set(0, x); return *this; }
 
 	virtual void init() { for(int i = 0; i < N; i++) t[i] = it[i]; }
 
 private:
+
+	const T& get(int i) const { return t[i]; }
+	void set(int i, const T& x) { if(st != nullptr and not _changed) save(); t[i] = x; }
+	void save() { for(int i = 0; i < N; i++) st[i] = t[i]; _changed = true; }
+	void restore() { if(_changed) { for(int i = 0; i < N; i++) t[i] = st[i]; _changed = false; } }
+	void commit() { _changed = false; }
+
+	void complete()
+		{ if(not parent()->isPeriodic()) st = new T[N]; }
+
 	T t[N], it[N];
+	T *st[N];
+	bool _changed;
 };
 
 } // physim

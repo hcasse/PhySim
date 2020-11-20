@@ -58,11 +58,19 @@ public:
 	ostream& out() const;
 	ostream& err() const;
 
+	inline bool hasState() const { return (flags & HAS_STATE) != 0; }
+	inline bool isPeriodic() const { return (flags & IS_PERIODIC) != 0; }
+
 protected:
 
 	virtual void start();
 	virtual void stop();
 	virtual void finalize(Simulation& sim);
+
+	static const int
+		HAS_STATE = 0x01,
+		IS_PERIODIC = 0x02;
+	int flags;
 
 private:
 	void add(AbstractValue *val);
