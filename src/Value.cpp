@@ -88,6 +88,16 @@ void AbstractValue::write(ostream& out) {
 void AbstractValue::init() {
 }
 
+/**
+ * This function is called at the end of simulation cycle to commit
+ * the date possibly stored inside the value. It is mainly used by state
+ * value for non-periodic models that store a copy of their cycle begin
+ * data in case of multiple updates. The default implementation does
+ * nothing.
+ */
+void AbstractValue::commit() {
+}
+
 
 /**
  * @fn Model *AbstractValue::parent() const;

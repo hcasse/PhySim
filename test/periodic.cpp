@@ -49,7 +49,6 @@ public:
 	{
 		connect(x, a.x);
 		connect(a.y, y);
-		//setTracing(true);
 	}
 
 	void init() override {

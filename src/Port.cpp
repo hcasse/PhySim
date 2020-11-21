@@ -72,6 +72,13 @@ long double AbstractPort::asReal(int i) {
 	return 0;
 }
 
+/**
+ * For input ports of periodic models, update the input port value from
+ * the output port. The default implementation does nothing.
+ */
+void AbstractPort::update() {
+}
+
 
 /**
  * @fn string AbstractPort::AbstractPort::name() const;
@@ -115,7 +122,10 @@ AbstractPort *AbstractPort::source() {
 		AbstractPort * p = this;
 		while(p->_back != nullptr)
 			p = p->_back;
-		return p;
+		if(p->mode() == OUT)
+			return p;
+		else
+			return nullptr;
 	}
 }
 

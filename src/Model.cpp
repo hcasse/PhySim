@@ -46,8 +46,8 @@ Model::~Model() {
  * the given port. The default implementation does nothing.
  * @param port	Updated port.
  */
-void Model::propagate(const AbstractPort& port) {
-}
+/*void Model::propagate(const AbstractPort& port) {
+}	TODO */
 
 
 /**
@@ -173,12 +173,23 @@ ostream& Model::err() const {
 	return sim().monitor().err();
 }
 
-
 /**
  * Called to let the output ports to publish their values to connected ports.
  * The default implementation does nothing.
  */
-void Model::publish() {
+/*void Model::publish() {
+ * TODO
+}*/
+
+/**
+ * Function called when a model has been commited in the simulation.
+ * This function is called at the end of a simulation cycle to let
+ * commit the state variables inside the model. This is the main
+ * work of this default implementation.
+ */
+void Model::commit() {
+	for(auto v: _vals)
+		v->commit();
 }
 
 
@@ -202,9 +213,9 @@ ReactiveModel::ReactiveModel(string name, ComposedModel *parent)
 /**
  *
  */
-void ReactiveModel::propagate(const AbstractPort& port) {
+/*void ReactiveModel::propagate(const AbstractPort& port) {
 	sim().trigger(*this);
-}
+}	TODO	*/
 
 
 /**
@@ -250,8 +261,8 @@ void PeriodicModel::start() {
 }
 
 ///
-void PeriodicModel::propagate(const AbstractPort& port) {
-}
+/*void PeriodicModel::propagate(const AbstractPort& port) {
+}	TODO */
 
 ///
 void PeriodicModel::update() {
@@ -260,11 +271,12 @@ void PeriodicModel::update() {
 }
 
 ///
-void PeriodicModel::publish() {
+/*void PeriodicModel::publish() {
 	for(auto p: ports())
 		if(p->mode() == OUT)
 			p->publish();
-}
+	TODO
+}*/
 
 
 /**
@@ -283,9 +295,9 @@ ComposedModel::ComposedModel(string name, ComposedModel *parent)
 	: Model(name, parent) { }
 
 ///
-void ComposedModel::propagate(const AbstractPort& port) {
+/*void ComposedModel::propagate(const AbstractPort& port) {
 	// TODO
-}
+}*/
 
 ///
 void ComposedModel::init() {
@@ -321,11 +333,13 @@ void ComposedModel::finalize(Simulation& sim) {
 }
 
 ///
+/*
 void ComposedModel::publish() {
 	for(auto m: subs)
 		m->publish();
 	Model::publish();
-}
+}	TODO
+*/
 
 
 /**

@@ -42,11 +42,12 @@ public:
 	void step();
 	void pause();
 	void stop();
-	void trigger(Model& model);
-	void triggerLast(Model& model);
-	void schedule(Model& model, date_t at);
-	inline date_t date() const { return _date; }
 
+	void schedule(Model& model, date_t at);
+	void trigger(Model& model);
+	void commit(Model& model);
+
+	inline date_t date() const { return _date; }
 	inline Model& top() const { return _top; }
 	inline Monitor& monitor() const { return *_mon; }
 	inline bool tracing() const { return _tracing; }
@@ -58,6 +59,7 @@ public:
 private:
 
 	void advance();
+	void stabilize();
 
 	typedef enum {
 		STOPPED,
@@ -76,11 +78,12 @@ private:
 			{ return at > d.at or (at == d.at && model < d.model); }
 	};
 
-	Model& _top;
-	set<Model *> _todo;
-	set<Model *> _last;
 	priority_queue<Date> _sched;
 	vector<Model *> _pers;
+	set<Model *> _todo;
+	set<Model *> _coms;
+
+	Model& _top;
 	date_t _date;
 	Monitor *_mon;
 	bool _mon_alloc, _tracing;

@@ -33,11 +33,11 @@ public:
 protected:
 
 	void init() override {
-		// TODO
+		s = 0;
 	}
 
 	void update() override {
-		// TODO
+		s = x + y +z;
 	}
 };
 
@@ -63,7 +63,17 @@ public:
 
 protected:
 	void test() override {
-		// TODO
+		x = 1; y = 2; z = 3;
+		step();
+		check(s, 6.);
+
+		x = 0; y = 0; z = 0;
+		step();
+		check(s, 0.);
+
+		x = 0; y = 1; z = 0;
+		step();
+		check(s, 3.);
 	}
 };
 

@@ -33,12 +33,18 @@ protected:
 	void step();
 	template <class T, int N>
 	inline void check(InputPort<T, N>& x, T ex, int i = 0) {
-		if(x[i] != ex) { err() << "failed: expected " << ex << ", got " << x << endl; _failed = true; }
+		if(x[i] != ex) {
+			err() << "failed: " << date() << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl;
+			_failed = true;
+		}
 	}
 
 	template <class T, int N>
 	inline void checkApprox(InputPort<T, N>& x, T ex, int i = 0, long double prec = 1e-5) {
-		if(fabs(x[i] - ex) > prec) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
+		if(fabs(x[i] - ex) > prec) {
+			err() << "failed: " << date() << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl;
+			_failed = true;
+		}
 	}
 
 private:
@@ -52,12 +58,18 @@ public:
 
 	template <class T, int N>
 	inline void check(InputPort<T, N>& x, int ex, int i = 0) {
-		if(x[i] != ex) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
+		if(x[i] != ex) {
+			err() << "failed: " << _date << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl;
+			_failed = true;
+		}
 	}
 
 	template <class T, int N>
 	inline void checkApprox(InputPort<T, N>& x, T ex, int i = 0, long double prec = 1e-5) {
-		if(fabs(x[i] - ex) > prec) { err() << "failed: " << (date() - 1) << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl; _failed = true; }
+		if(fabs(x[i] - ex) > prec) {
+			err() << "failed: " << _date << ": " << x.fullname() << ": expected " << ex << ", got " << x << endl;
+			_failed = true;
+		}
 	}
 
 protected:
@@ -68,6 +80,7 @@ private:
 	PeriodicModel& _model;
 	date_t _duration;
 	bool _failed;
+	date_t _date;
 };
 
 }	// physim

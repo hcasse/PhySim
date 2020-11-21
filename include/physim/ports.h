@@ -1,8 +1,21 @@
 /*
- * ports.h
+ * PhySim library -- DEVS for physics
+ * Copyright (C) 2020  Hugues Cassé <hug.casse@gmail.com>
  *
- *  Created on: 20 nov. 2020
- *      Author: casse
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301
+ *  USA
  */
 
 #ifndef INCLUDE_PHYSIM_PORTS_H_
@@ -29,12 +42,13 @@ public:
 	inline const Type& type() const { return _type; }
 	inline int size() const { return _size; }
 	inline Model& model() const { return _model; }
-	inline bool isLinked() const { return _back != nullptr; }
+	inline bool isRelay() const { return _back != nullptr; }
 	AbstractPort *source();
 	string fullname() const;
 	virtual void publish();
 	virtual bool supportsReal();
 	virtual long double asReal(int i = 0);
+	virtual void update();
 protected:
 	virtual void finalize(Monitor& mon);
 private:
@@ -70,11 +84,11 @@ class OutputPort: public Port<T, N> {
 	friend class InputPort<T, N>;
 public:
 	OutputPort(Model *parent, string name)
-		: Port<T, N>(parent, name, OUT), _updated(false) { }
+		: Port<T, N>(parent, name, OUT) { }
 	OutputPort(ComposedModel *parent, string name)
-		: Port<T, N>(parent, name, OUT), _updated(false) { }
+		: Port<T, N>(parent, name, OUT) { }
 	OutputPort(PeriodicModel *parent, string name)
-		: Port<T, N>(parent, name, OUT), _updated(true) { }
+		: Port<T, N>(parent, name, OUT) { }
 
 	class Accessor {
 	public:
@@ -90,14 +104,21 @@ public:
 	inline Accessor operator*() { return Accessor(*this, 0); }
 	inline Accessor operator[](int i) { return Accessor(*this, i); }
 
-	inline void commit() {
-		if(_updated) {
-			propagate();
-			_updated = false;
+	inline void propagate() { for(auto m: _trigger_list) Port<T, N>::model().sim().trigger(*m); }
+
+protected:
+	void finalize(Monitor& mon) override {
+		if(not Port<T, N>::isRelay())
+			buffer();
+		else {
+			auto p = Port<T, N>::source();
+			if(p == nullptr)
+				Port<T, N>::model().error("relay output port " + Port<T, N>::fullname() + " is dangling!");
+			else {
+				Port<T, N>::t = static_cast<OutputPort<T, N> *>(p)->buffer();
+			}
 		}
 	}
-
-	inline void propagate() { for(auto m: _trigger_list) Port<T, N>::model().sim().trigger(*m); }
 
 private:
 	inline void recordTrigger(Model *m) { _trigger_list.push_back(m); }
@@ -107,7 +128,6 @@ private:
 
 	inline void set(int i, const T& x) {
 		if(Port<T, N>::t[i] != x) {
-			_updated = true;
 			Port<T, N>::t[i] = x;
 			if(Port<T, N>::model().sim().tracing()) {
 				Port<T, N>::model().err() << "TRACE: " << Port<T, N>::model().sim().date()
@@ -116,11 +136,11 @@ private:
 					Port<T, N>::model().err() <<  "[" << i << "]";
 				Port<T, N>::model().err() << " receives " << x << endl;
 			}
+			propagate();
 		}
 	}
 
 	vector<Model *> _trigger_list;
-	bool _updated;
 };
 
 
@@ -130,7 +150,7 @@ public:
 	InputPort(Model *parent, string name)
 		: Port<T, N>(parent, name, IN), buf(nullptr) { }
 
-	void update()
+	void update() override
 		{ for(int i = 0; i < N; i++) Port<T, N>::t[i] = buf[i]; }
 
 private:
@@ -141,7 +161,7 @@ private:
 		else {
 			Model *parent =  &Port<T, N>::model();
 			auto op = static_cast<OutputPort<T, N> *>(p);
-			auto buf = op->buffer();
+			buf = op->buffer();
 			if(parent->isPeriodic())
 				Port<T, N>::t = new T[N];
 			else {

@@ -118,7 +118,8 @@ PeriodicTest::PeriodicTest(string name, PeriodicModel& model, duration_t duratio
 	ApplicationModel(name),
 	_model(model),
 	_duration(duration),
-	_failed(false)
+	_failed(false),
+	_date(0)
 	{ }
 
 /**
@@ -128,12 +129,12 @@ PeriodicTest::PeriodicTest(string name, PeriodicModel& model, duration_t duratio
 int PeriodicTest::perform() {
 	_failed = false;
 	err() << "Launching " << name() << endl;
-	while(not _failed and date() < _duration) {
-		if(date() % _model.period() == 0)
-			test(date());
+	while(not _failed and date() <= _duration) {
+		_date = date();
 		sim().step();
+		if(_date % _model.period() == 0)
+			test(_date);
 	}
-	test(date());
 	if(_failed)
 		err() << "Failure at " << date() << endl;
 	else

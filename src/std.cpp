@@ -137,17 +137,17 @@ void Report::stop() {
 
 ///
 void Report::update() {
+	sim().commit(*this);
+}
+
+///
+void Report::commit() {
 	(*_out) << date();
 	for(auto r: _reps) {
 		(*_out) << '\t';
 		r->print(*_out);
 	}
 	(*_out) << endl;
-}
-
-///
-void Report::propagate(const AbstractPort& port) {
-	sim().triggerLast(*this);
 }
 
 } // physim

@@ -74,17 +74,10 @@ void Simulation::start() {
 		_top.start();
 		if(tracing())
 			_mon->err() << "TRACE: initializing the simulation." << endl;
+		_state = RUNNING;
 		_top.init();
-		_top.publish();
-
-		while(not _todo.empty() and _state != STOPPED) {
-			auto m = *_todo.begin();
-			_todo.erase(m);
-			if(tracing())
-				_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
-			m->update();
-		}
-
+		//_top.publish();	TODOs
+		stabilize();
 		if(tracing())
 			_mon->err() << "TRACE: simulation paused." << endl;
 		_state = PAUSED;
@@ -153,33 +146,46 @@ void Simulation::step() {
  * is stopped, or it stays model to update.
  */
 void Simulation::advance() {
-	//cerr << "DEBUG: at " << _date << endl;
-	//cerr << "DEBUG: schedule = " << _sched.top().at << ": " << _sched.top().model->fullname() << endl;
 
-	// update the input ports of periodic models
+	// select periodic models
 	while(not _sched.empty() and _sched.top().at == _date) {
-		for(auto p: _sched.top().model->ports())
-			if(p->mode() == IN)
-				;
-	}
-
-	// update the periodic models
-	while(not _sched.empty() and _sched.top().at == _date) {
+		//cerr << "DEBUG: pumping " << _sched.top().model->fullname() << " at " << _sched.top().at << endl;
 		_pers.push_back(_sched.top().model);
 		_sched.pop();
 	}
 
-	// perform periodic models
-	for(auto p: _pers) {
-		if(tracing())
-			_mon->err() << "TRACE: " << _date << ": updating " << p->fullname() << endl;
-		p->update();
+	// update input of periodic models
+	for(auto m: _pers) {
+		for(auto p: _sched.top().model->ports())
+			if(p->mode() == IN) {
+				if(tracing())
+					_mon->err() << "TRACE: " << _date << ": updating port " << p->fullname() << endl;
+				p->update();
+			}
 	}
-	for(auto p: _pers)
-		p->publish();
-	_pers.clear();
 
-	// pump models that needs to be updated
+	// update periodic models
+	for(auto m: _pers) {
+		if(tracing())
+			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+		m->update();
+	}
+
+	// stabilize the simulation
+	_pers.clear();
+	stabilize();
+	_date++;
+}
+
+
+/**
+ * Stabilize the state of the simulation, that is, update the triggered
+ * models until a fix point is reached or the simulation passes in state
+ * STOPPED.
+ */
+void Simulation::stabilize() {
+
+	// update triggered models
 	while(not _todo.empty() and _state != STOPPED) {
 		auto m = *_todo.begin();
 		_todo.erase(m);
@@ -189,16 +195,12 @@ void Simulation::advance() {
 	}
 
 	// trigger last models
-	while(not _last.empty()) {
-		auto m = *_last.begin();
-		_last.erase(m);
+	for(auto m: _coms) {
 		if(tracing())
-			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
-		m->update();
+			_mon->err() << "TRACE: " << _date << ": committing " << m->fullname() << endl;
+		m->commit();
 	}
-
-	// next date
-	_date++;
+	_coms.clear();
 }
 
 
@@ -214,16 +216,13 @@ void Simulation::trigger(Model& model) {
 		_mon->err() << "TRACE: " << date() << ": trigger " << model.fullname() << endl;
 }
 
-
 /**
- * Ask the model to be triggered in an epilog phase.
- * Typical use is for reporting once the system is stable.
- * @param model	Model to update.
+ * Record the given to be commited.
+ * @param model	Model to be commited.
  */
-void Simulation::triggerLast(Model& model) {
-	_todo.insert(&model);
+void Simulation::commit(Model& model) {
+	_coms.insert(&model);
 }
-
 
 /**
  * Schedule the trigger of the given model at the given date.
@@ -232,11 +231,13 @@ void Simulation::triggerLast(Model& model) {
  * @param at		Date of trigger.
  */
 void Simulation::schedule(Model& model, date_t at) {
-	//cerr << "DEBUG: " << _date << ": " << model.fullname() << " scheduled at " << at << endl;
 	if(at <= _date)
 		_mon->warn("model " + model.fullname() + " ask scheduling at date in the past: " + to_string(at));
-	else
+	else {
 		_sched.push(Date(at, model));
+		if(tracing())
+			cerr << "DEBUG: " << _date << ": " << model.fullname() << " scheduled at " << at << endl;
+	}
 }
 
 /**

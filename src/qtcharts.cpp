@@ -582,14 +582,20 @@ void QtLineDisplay::stop() {
 
 ///
 void QtLineDisplay::update() {
+	sim().commit(*this);
+}
+
+///
+void QtLineDisplay::commit() {
 	_dates.push_back(date());
 	for(auto r: _reps)
 		r->record();
 }
 
-void QtLineDisplay::propagate(const AbstractPort& port) {
-	sim().triggerLast(*this);
-}
+/*void QtLineDisplay::propagate(const AbstractPort& port) {
+	//sim().triggerLast(*this);
+}	TODO
+*/
 
 /**
  * @fn QtSimulate;

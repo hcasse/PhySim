@@ -39,6 +39,7 @@ public:
 	virtual bool read(istream& in);
 	virtual void write(ostream& out);
 	virtual void init();
+	virtual void commit();
 
 	inline Model *parent() const { return _parent; }
 	inline string name() const { return _name; }
@@ -112,7 +113,8 @@ public:
 	inline Access operator[](int i) { return Access(*this, i); }
 	inline State<T, N>& operator=(const T& x) { set(0, x); return *this; }
 
-	virtual void init() { for(int i = 0; i < N; i++) t[i] = it[i]; }
+	void init() override { for(int i = 0; i < N; i++) t[i] = it[i]; }
+	void commit() override { _changed = false; }
 
 private:
 
@@ -120,7 +122,6 @@ private:
 	void set(int i, const T& x) { if(st != nullptr and not _changed) save(); t[i] = x; }
 	void save() { for(int i = 0; i < N; i++) st[i] = t[i]; _changed = true; }
 	void restore() { if(_changed) { for(int i = 0; i < N; i++) t[i] = st[i]; _changed = false; } }
-	void commit() { _changed = false; }
 
 	void complete()
 		{ if(not parent()->isPeriodic()) st = new T[N]; }

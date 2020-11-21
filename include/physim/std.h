@@ -98,7 +98,7 @@ protected:
 	void start() override;
 	void stop() override;
 	void update() override;
-	void propagate(const AbstractPort& port) override;
+	void commit() override;
 
 private:
 	ostream *_out;

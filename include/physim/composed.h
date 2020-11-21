@@ -44,11 +44,11 @@ public:
 
 protected:
 	void init() override;
-	void propagate(const AbstractPort& port) override;
+	//void propagate(const AbstractPort& port) override;	TODO
 	void start() override;
 	void stop() override;
 	void finalize(Simulation& sim) override;
-	void publish() override;
+	//void publish() override;
 
 private:
 	vector<Model *> subs;

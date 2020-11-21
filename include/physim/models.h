@@ -48,8 +48,9 @@ public:
 	virtual bool isComposed() const { return false; }
 	virtual void init();
 	virtual void update();
-	virtual void propagate(const AbstractPort& port);
-	virtual void publish();
+	// virtual void propagate(const AbstractPort& port);	TODO
+	//virtual void publish();								TODO
+	virtual void commit();
 
 	void info(const string& msg) const;
 	void warn(const string& msg) const;
@@ -86,7 +87,7 @@ class ReactiveModel: public Model {
 public:
 	ReactiveModel(string name, ComposedModel *parent = nullptr);
 protected:
-	void propagate(const AbstractPort& port) override;
+	//void propagate(const AbstractPort& port) override;	TODO
 };
 
 class PeriodicModel: public Model {
@@ -97,10 +98,10 @@ public:
 	inline duration_t period() const { return _period; }
 protected:
 	void start() override;
-	void propagate(const AbstractPort& port) override;
+	// void propagate(const AbstractPort& port) override;	TODO
 	void update();
 	virtual void update(date_t date) = 0;
-	void publish() override;
+	//void publish() override;
 private:
 	duration_t _period;
 };
