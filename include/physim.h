@@ -219,7 +219,7 @@ public:
 	OutputPort(PeriodicModel *parent, string name)
 		: Port<T, N>(parent, name, OUT), buf(new T[N]), _updated(true) { Port<T, N>::t = new T[N]; }
 	~OutputPort() {
-		if(not Port<T, N>::isLinked()) {
+		if(!Port<T, N>::isLinked()) {
 			if(buf != Port<T, N>::t)
 				delete [] Port<T, N>::t;
 			if(buf != nullptr)
@@ -395,7 +395,7 @@ inline date_t Model::date() const { return sim().date(); }
 template <class T, int N>
 inline void OutputPort<T, N>::propagate()
 	{ for(auto p: _links) p->touch(); }
-bool Model::isSimulating() const { return _sim != nullptr and not _sim->isStopped(); }
+bool Model::isSimulating() const { return _sim != nullptr && !_sim->isStopped(); }
 
 template <class T, int N>
 class Parameter: public AbstractValue {
@@ -413,9 +413,9 @@ public:
 	inline const T& operator[](int i) const { return t[i]; }
 
 	inline void set(const T& x)
-		{ if(not parent()->isSimulating()) for(int i = 0; i < N; i++) t[i] = x; }
+		{ if(!parent()->isSimulating()) for(int i = 0; i < N; i++) t[i] = x; }
 	inline void set(const std::initializer_list<T>& l)
-	{ if(not parent()->isSimulating()) { int i = 0; for(const auto& x: l) { t[i] = x; i++; } } }
+	{ if(!parent()->isSimulating()) { int i = 0; for(const auto& x: l) { t[i] = x; i++; } } }
 
 private:
 	T t[N];
