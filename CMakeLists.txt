@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(PhySim)
 
 # uncomment to remove Qt use
-#set(NO_QT ON)
+set(NO_QT ON)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,6 +18,8 @@ if(NOT NO_QT)
 	set(QT_LIBS		Qt5::Widgets Qt5::Charts)
 	add_definitions(${Qt5Widgets_DEFINITIONS} -fPIC)
 	include_directories(${Qt5Widgets_INCLUDE_DIRS})
+else()
+	add_definitions(-DNO_QT)
 endif()
 
 include_directories("include")

@@ -8,7 +8,9 @@
 #include <physim.h>
 #include <physim/test.h>
 #include <physim/std.h>
-#include <physim/qtcharts.h>
+#ifndef NO_QT
+#	include <physim/qtcharts.h>
+#endif
 using namespace physim;
 
 const double
