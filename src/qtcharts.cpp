@@ -205,7 +205,7 @@ QVariant TreeModel::data(const QModelIndex &index, int role) const {
 			return n->name().c_str();
 	}
 	else if(role == Qt::CheckStateRole) {
-		if(index.column() == 1 and n->isSelectable()) {
+		if(index.column() == 1 && n->isSelectable()) {
 			if(n->selected())
 				return Qt::Checked;
 			else
@@ -220,7 +220,7 @@ Qt::ItemFlags TreeModel::flags(const QModelIndex &index) const {
 	if(!index.isValid())
 		return Qt::NoItemFlags;
 	ModelNode *n = static_cast<ModelNode *>(index.internalPointer());
-	if(index.column() == 1 and n->isSelectable())
+	if(index.column() == 1 && n->isSelectable())
 		return Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
 	else
 		return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
@@ -280,10 +280,10 @@ bool TreeModel::setData(
 	const QVariant &value,
 	int role)
 {
-	if(not index.isValid())
+	if(!index.isValid())
 		return false;
 	ModelNode *n = static_cast<ModelNode *>(index.internalPointer());
-    if(role == Qt::CheckStateRole and n->isSelectable()) {
+    if(role == Qt::CheckStateRole && n->isSelectable()) {
     	auto b = value.toBool();
     	if(b != n->selected()) {
     		n->select(b);

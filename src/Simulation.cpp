@@ -77,7 +77,7 @@ void Simulation::start() {
 		_top.init();
 		_top.publish();
 
-		while(not _todo.empty() and _state != STOPPED) {
+		while(!_todo.empty() && _state != STOPPED) {
 			auto m = *_todo.begin();
 			_todo.erase(m);
 			if(tracing())
@@ -157,7 +157,7 @@ void Simulation::advance() {
 	//cerr << "DEBUG: schedule = " << _sched.top().at << ": " << _sched.top().model->fullname() << endl;
 
 	// pump read dates
-	while(not _sched.empty() and _sched.top().at == _date) {
+	while(!_sched.empty() && _sched.top().at == _date) {
 		_pers.push_back(_sched.top().model);
 		_sched.pop();
 	}
@@ -173,7 +173,7 @@ void Simulation::advance() {
 	_pers.clear();
 
 	// pump models that needs to be updated
-	while(not _todo.empty() and _state != STOPPED) {
+	while(! _todo.empty() && _state != STOPPED) {
 		auto m = *_todo.begin();
 		_todo.erase(m);
 		if(tracing())
@@ -182,7 +182,7 @@ void Simulation::advance() {
 	}
 
 	// trigger last models
-	while(not _last.empty()) {
+	while(!_last.empty()) {
 		auto m = *_last.begin();
 		_last.erase(m);
 		if(tracing())
@@ -253,7 +253,7 @@ void Simulation::stop() {
 		_state = STOPPED;
 		_top.stop();
 		_todo.clear();
-		while(not _sched.empty())
+		while(!_sched.empty())
 			_sched.pop();
 	}
 }
