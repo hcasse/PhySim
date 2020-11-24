@@ -375,9 +375,9 @@ private:
 		date_t at;
 		Model *model;
 		inline bool operator==(const Date& d) const
-			{ return at == d.at and  model == d.model; }
+			{ return at == d.at &&  model == d.model; }
 		inline bool operator<(const Date& d) const
-			{ return at > d.at or (at == d.at && model < d.model); }
+			{ return at > d.at || (at == d.at && model < d.model); }
 	};
 
 	Model& _top;
