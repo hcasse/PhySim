@@ -60,9 +60,11 @@ private:
 
 	void advance();
 	void stabilize();
+	ostream& trace(string msg = "");
 
 	typedef enum {
 		STOPPED,
+		STARTING,
 		PAUSED,
 		RUNNING
 	} state_t;

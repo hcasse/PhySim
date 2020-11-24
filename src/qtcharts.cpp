@@ -139,7 +139,18 @@ protected:
 			return;
 		_children_done = true;
 		int i = 0;
-		for(auto p: _model->ports()) {
+		for(auto p: _model->inputs()) {
+			if(p->size() == 1) {
+				_children.push_back(new PortNode(p, 0, selector(), this, i));
+				i++;
+			}
+			else
+				for(int j = 0; j < p->size(); j++) {
+					_children.push_back(new PortNode(p, j, selector(), this, i));
+					i++;
+				}
+		}
+		for(auto p: _model->outputs()) {
 			if(p->size() == 1) {
 				_children.push_back(new PortNode(p, 0, selector(), this, i));
 				i++;
@@ -468,7 +479,7 @@ void QtSimulateWindow::do_run() {
 	sim->start();
 	for(auto s: stats)
 		s->record(sim->date());
-	while(sim->date() <= duration) {
+	while(sim->date() < duration) {
 		sim->step();
 		for(auto s: stats)
 			s->record(sim->date());

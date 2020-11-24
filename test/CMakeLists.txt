@@ -26,3 +26,6 @@ endif()
 
 add_executable("pingpong" "pingpong.cpp")
 target_link_libraries("pingpong" "physim")
+
+add_executable("state" "state.cpp")
+target_link_libraries("state" "physim")

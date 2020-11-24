@@ -42,15 +42,6 @@ Model::~Model() {
 
 
 /**
- * Called to update the model according to a propagation along
- * the given port. The default implementation does nothing.
- * @param port	Updated port.
- */
-/*void Model::propagate(const AbstractPort& port) {
-}	TODO */
-
-
-/**
  * Function called to update the model. The default implementation does nothing.
  */
 void Model::update() {
@@ -62,6 +53,8 @@ void Model::update() {
  * to let the system initialize itself. The default implementation does nothing.
  */
 void Model::init() {
+	for(auto s: states())
+		s->init();
 }
 
 
@@ -86,11 +79,10 @@ void Model::stop() {
  */
 void Model::finalize(Simulation& sim) {
 	_sim = &sim;
-	//err() << "DEBUG: finalize " << name() << endl;
-	for(auto p: _ports) {
+	for(auto p: _ins)
 		p->finalize(sim.monitor());
-		//err() << "DEBUG: finalize port " << p->fullname() << endl;
-	}
+	for(auto p: _outs)
+		p->finalize(sim.monitor());
 }
 
 
@@ -99,9 +91,12 @@ void Model::finalize(Simulation& sim) {
  * @param val	Added value.
  */
 void Model::add(AbstractValue *val) {
-	_vals.push_back(val);
-	if(val->flavor() == STATE)
+	if(val->flavor() == STATE) {
+		_states.push_back(val);
 		flags |= HAS_STATE;
+	}
+	else
+		_params.push_back(val);
 }
 
 
@@ -174,22 +169,15 @@ ostream& Model::err() const {
 }
 
 /**
- * Called to let the output ports to publish their values to connected ports.
- * The default implementation does nothing.
- */
-/*void Model::publish() {
- * TODO
-}*/
-
-/**
  * Function called when a model has been commited in the simulation.
  * This function is called at the end of a simulation cycle to let
  * commit the state variables inside the model. This is the main
  * work of this default implementation.
  */
 void Model::commit() {
-	for(auto v: _vals)
-		v->commit();
+	for(auto s: _states) {
+		s->commit();
+	}
 }
 
 
@@ -202,20 +190,6 @@ void Model::commit() {
 ///
 ReactiveModel::ReactiveModel(string name, ComposedModel *parent)
 	: Model(name, parent) { }
-
-
-/**
- * @fn void update();
- * Function to overload to compute the output port because of a change in the
- * input ports.
- */
-
-/**
- *
- */
-/*void ReactiveModel::propagate(const AbstractPort& port) {
-	sim().trigger(*this);
-}	TODO	*/
 
 
 /**
@@ -257,26 +231,14 @@ PeriodicModel::PeriodicModel(string name, ComposedModel *parent)
 ///
 void PeriodicModel::start() {
 	Model::start();
-	sim().schedule(*this, date() + _period);
+	sim().schedule(*this, date());
 }
-
-///
-/*void PeriodicModel::propagate(const AbstractPort& port) {
-}	TODO */
 
 ///
 void PeriodicModel::update() {
 	update(date());
 	sim().schedule(*this, date() + _period);
 }
-
-///
-/*void PeriodicModel::publish() {
-	for(auto p: ports())
-		if(p->mode() == OUT)
-			p->publish();
-	TODO
-}*/
 
 
 /**
@@ -293,11 +255,6 @@ void PeriodicModel::update() {
  */
 ComposedModel::ComposedModel(string name, ComposedModel *parent)
 	: Model(name, parent) { }
-
-///
-/*void ComposedModel::propagate(const AbstractPort& port) {
-	// TODO
-}*/
 
 ///
 void ComposedModel::init() {
@@ -331,15 +288,6 @@ void ComposedModel::finalize(Simulation& sim) {
 		m->finalize(sim);
 	Model::finalize(sim);
 }
-
-///
-/*
-void ComposedModel::publish() {
-	for(auto m: subs)
-		m->publish();
-	Model::publish();
-}	TODO
-*/
 
 
 /**

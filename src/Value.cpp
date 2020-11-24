@@ -36,7 +36,7 @@ namespace physim {
  * @param size		Value size (for arrays).
  * @param flavor	Value flavor.
  */
-AbstractValue::AbstractValue(Model *parent, string name, Type& type, int size, flavor_t flavor)
+AbstractValue::AbstractValue(Model *parent, string name, const Type& type, int size, flavor_t flavor)
 	: _parent(parent), _name(name), _type(type), _size(size), _flavor(flavor)
 {
 	parent->add(this);
@@ -98,6 +98,13 @@ void AbstractValue::init() {
 void AbstractValue::commit() {
 }
 
+/**
+ * For eactie models with state, this call reset the state to is value
+ * at the beginning of the current simulation cycle.
+ * Default implementation does nothing.
+ */
+void AbstractValue::restore() {
+}
 
 /**
  * @fn Model *AbstractValue::parent() const;

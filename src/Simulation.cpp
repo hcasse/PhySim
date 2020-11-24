@@ -68,18 +68,18 @@ Simulation::~Simulation() {
  */
 void Simulation::start() {
 	if(_state == STOPPED) {
+		_state = STARTING;
 		if(tracing())
-			_mon->err() << "TRACE: starting the simulation." << endl;
+			trace("starting the simulation.") << endl;
 		_date = 0;
 		_top.start();
 		if(tracing())
-			_mon->err() << "TRACE: initializing the simulation." << endl;
+			trace("initializing the simulation.") << endl;
 		_state = RUNNING;
 		_top.init();
-		//_top.publish();	TODOs
 		stabilize();
 		if(tracing())
-			_mon->err() << "TRACE: simulation paused." << endl;
+			trace("simulation paused.") << endl;
 		_state = PAUSED;
 	}
 }
@@ -90,10 +90,14 @@ void Simulation::start() {
 void Simulation::run() {
 	start();
 	_state = RUNNING;
+	if(_tracing)
+		trace("simulation running.") << endl;
 	while(_state == RUNNING)
 		step();
 	if(_state == RUNNING)
 		_state = PAUSED;
+	if(_tracing)
+		trace("simulation paused.") << endl;
 }
 
 /**
@@ -106,7 +110,6 @@ void Simulation::run(duration_t duration) {
 	if(_tracing)
 		_mon->err() << "TRACE: simulation running." << endl;
 	while(_state == RUNNING && duration != 0) {
-		//cerr << "DEBUG: step " << _date << endl;
 		advance();
 		duration--;
 	}
@@ -124,10 +127,15 @@ void Simulation::run(duration_t duration) {
 void Simulation::runUntil(date_t date) {
 	start();
 	_state = RUNNING;
+	if(_tracing)
+		trace() << "simulation running." << endl;
 	while(_state == RUNNING && _date < date)
 		advance();
-	if(_state == RUNNING)
+	if(_state == RUNNING) {
 		_state = PAUSED;
+		if(_tracing)
+			trace() << "simulation paused." << endl;
+	}
 }
 
 /**
@@ -147,27 +155,25 @@ void Simulation::step() {
  */
 void Simulation::advance() {
 
-	// select periodic models
+	// pump periodic models
 	while(not _sched.empty() and _sched.top().at == _date) {
-		//cerr << "DEBUG: pumping " << _sched.top().model->fullname() << " at " << _sched.top().at << endl;
 		_pers.push_back(_sched.top().model);
 		_sched.pop();
 	}
 
 	// update input of periodic models
 	for(auto m: _pers) {
-		for(auto p: _sched.top().model->ports())
-			if(p->mode() == IN) {
+		for(auto p: _sched.top().model->inputs()) {
 				if(tracing())
-					_mon->err() << "TRACE: " << _date << ": updating port " << p->fullname() << endl;
+					trace() << "updating port " << p->fullname() << endl;
 				p->update();
-			}
+		}
 	}
 
 	// update periodic models
 	for(auto m: _pers) {
 		if(tracing())
-			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+			trace() << "updating " << m->fullname() << endl;
 		m->update();
 	}
 
@@ -177,6 +183,15 @@ void Simulation::advance() {
 	_date++;
 }
 
+/**
+ * Generate a trce with the given message.
+ * @param msg	Message to display.
+ * @return		Output stream to append more information.
+ */
+ostream& Simulation::trace(string msg) {
+	_mon->err() << "TRACE: " << _date << ": " << msg;
+	return _mon->err();
+}
 
 /**
  * Stabilize the state of the simulation, that is, update the triggered
@@ -190,14 +205,17 @@ void Simulation::stabilize() {
 		auto m = *_todo.begin();
 		_todo.erase(m);
 		if(tracing())
-			_mon->err() << "TRACE: " << _date << ": updating " << m->fullname() << endl;
+			trace() << "updating " << m->fullname() << endl;
+		if(m->hasState())
+			for(auto s: m->states())
+				s->restore();
 		m->update();
 	}
 
 	// trigger last models
 	for(auto m: _coms) {
 		if(tracing())
-			_mon->err() << "TRACE: " << _date << ": committing " << m->fullname() << endl;
+			trace() << " committing " << m->fullname() << endl;
 		m->commit();
 	}
 	_coms.clear();
@@ -209,11 +227,9 @@ void Simulation::stabilize() {
  * @param model	Model to trigger.s
  */
 void Simulation::trigger(Model& model) {
-	//_mon->err() << "DEBUG: state = " << _state << endl;
-	//if(not isStopped())
 	_todo.insert(&model);
 	if(tracing())
-		_mon->err() << "TRACE: " << date() << ": trigger " << model.fullname() << endl;
+		trace() << "trigger " << model.fullname() << endl;
 }
 
 /**
@@ -222,6 +238,8 @@ void Simulation::trigger(Model& model) {
  */
 void Simulation::commit(Model& model) {
 	_coms.insert(&model);
+	if(tracing())
+		trace() << "committing " << model.fullname() << endl;
 }
 
 /**
@@ -231,12 +249,12 @@ void Simulation::commit(Model& model) {
  * @param at		Date of trigger.
  */
 void Simulation::schedule(Model& model, date_t at) {
-	if(at <= _date)
+	if(tracing())
+		trace() << model.fullname() << " scheduled at " << at << endl;
+	if(at <= _date and _state != STARTING )
 		_mon->warn("model " + model.fullname() + " ask scheduling at date in the past: " + to_string(at));
 	else {
 		_sched.push(Date(at, model));
-		if(tracing())
-			cerr << "DEBUG: " << _date << ": " << model.fullname() << " scheduled at " << at << endl;
 	}
 }
 
@@ -263,6 +281,8 @@ void Simulation::stop() {
 		_todo.clear();
 		while(not _sched.empty())
 			_sched.pop();
+		if(_tracing)
+			trace() << "simulation stopped." << endl;
 	}
 }
 

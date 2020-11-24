@@ -30,7 +30,7 @@ class ComposedModel;
 
 class Model {
 	friend class AbstractValue;
-	friend AbstractPort;
+	friend class AbstractPort;
 	friend class Simulation;
 	friend class ComposedModel;
 public:
@@ -42,14 +42,15 @@ public:
 	inline date_t date() const { return sim().date(); }
 	inline bool simEnabled() const { return _sim != nullptr; }
 	inline bool isSimulating() const { return _sim != nullptr and not _sim->isStopped(); }
-	inline const vector<AbstractPort *>& ports() const { return _ports; }
+	inline const vector<AbstractPort *>& inputs() const { return _ins; }
+	inline const vector<AbstractPort *>& outputs() const { return _outs; }
+	inline const vector<AbstractValue *>& params() const { return _params; }
+	inline const vector<AbstractValue *>& states() const { return _states; }
 	inline ComposedModel *parent() const { return _parent; }
 
 	virtual bool isComposed() const { return false; }
 	virtual void init();
 	virtual void update();
-	// virtual void propagate(const AbstractPort& port);	TODO
-	//virtual void publish();								TODO
 	virtual void commit();
 
 	void info(const string& msg) const;
@@ -78,16 +79,16 @@ private:
 	string _name;
 	ComposedModel *_parent;
 	Simulation *_sim;
-	vector<AbstractPort *> _ports;
-	vector<AbstractValue *> _vals;
+	vector<AbstractPort *> _ins;
+	vector<AbstractPort *> _outs;
+	vector<AbstractValue *> _params;
+	vector<AbstractValue *> _states;
 	mutable string _full_name;
 };
 
 class ReactiveModel: public Model {
 public:
 	ReactiveModel(string name, ComposedModel *parent = nullptr);
-protected:
-	//void propagate(const AbstractPort& port) override;	TODO
 };
 
 class PeriodicModel: public Model {
@@ -98,10 +99,8 @@ public:
 	inline duration_t period() const { return _period; }
 protected:
 	void start() override;
-	// void propagate(const AbstractPort& port) override;	TODO
 	void update();
 	virtual void update(date_t date) = 0;
-	//void publish() override;
 private:
 	duration_t _period;
 };

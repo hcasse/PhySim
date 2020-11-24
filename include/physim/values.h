@@ -32,7 +32,7 @@ class Model;
 
 class AbstractValue {
 public:
-	AbstractValue(Model *_parent, string name, Type& type, int size, flavor_t flavor);
+	AbstractValue(Model *_parent, string name, const Type& type, int size, flavor_t flavor);
 	virtual ~AbstractValue();
 	virtual bool parse(string text);
 	virtual void print(ostream& out);
@@ -40,10 +40,11 @@ public:
 	virtual void write(ostream& out);
 	virtual void init();
 	virtual void commit();
+	virtual void restore();
 
 	inline Model *parent() const { return _parent; }
 	inline string name() const { return _name; }
-	inline Type& type() const { return _type; }
+	inline const Type& type() const { return _type; }
 	inline flavor_t flavor() const { return _flavor; }
 	inline int size() const { return _size; }
 	string fullname();
@@ -51,13 +52,13 @@ public:
 private:
 	Model *_parent;
 	string _name;
-	Type& _type;
+	const Type& _type;
 	flavor_t _flavor;
 	int _size;
 	mutable string _full_name;
 };
 
-template <class T, int N>
+template <class T, int N = 1>
 class Parameter: public AbstractValue {
 public:
 	inline Parameter(Model *parent, string name)
@@ -81,17 +82,17 @@ private:
 	T t[N];
 };
 
-template <class T, int N>
+template <class T, int N = 1>
 class State: public AbstractValue {
 public:
 	State(Model *parent, string name)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		: AbstractValue(parent, name, type_of<T>(), N, STATE), st(nullptr), _changed(false)
 		{ complete(); }
 	State(Model *parent, string name, const T& x)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		: AbstractValue(parent, name, type_of<T>(), N, STATE), st(nullptr), _changed(false)
 		{ for(int i = 0; i < N; i++) it[i] = x; complete(); }
 	State(Model *parent, string name, const initializer_list<T>& l)
-		: AbstractValue(parent, name, type_of<T>(), N, PARAM), st(nullptr), _changed(false)
+		: AbstractValue(parent, name, type_of<T>(), N, STATE), st(nullptr), _changed(false)
 		{ auto i = 0; for(const auto& x: l) { it[i] = x; i++; } complete(); }
 	~State() { if(st != nullptr) delete [] st; }
 
@@ -115,19 +116,28 @@ public:
 
 	void init() override { for(int i = 0; i < N; i++) t[i] = it[i]; }
 	void commit() override { _changed = false; }
+	void restore() override { if(_changed) { for(int i = 0; i < N; i++) t[i] = st[i]; _changed = false; } }
 
 private:
 
 	const T& get(int i) const { return t[i]; }
-	void set(int i, const T& x) { if(st != nullptr and not _changed) save(); t[i] = x; }
-	void save() { for(int i = 0; i < N; i++) st[i] = t[i]; _changed = true; }
-	void restore() { if(_changed) { for(int i = 0; i < N; i++) t[i] = st[i]; _changed = false; } }
+	void set(int i, const T& x) {
+		if(st != nullptr and not _changed)
+			save();
+		t[i] = x;
+	}
+	void save() {
+		for(int i = 0; i < N; i++) st[i] = t[i];
+		_changed = true;
+		auto m = parent();
+		m->sim().commit(*m);
+	}
 
 	void complete()
 		{ if(not parent()->isPeriodic()) st = new T[N]; }
 
 	T t[N], it[N];
-	T *st[N];
+	T *st;
 	bool _changed;
 };
 

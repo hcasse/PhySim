@@ -45,10 +45,11 @@ public:
 	inline bool isRelay() const { return _back != nullptr; }
 	AbstractPort *source();
 	string fullname() const;
-	virtual void publish();
+	//virtual void publish();	TODO
 	virtual bool supportsReal();
 	virtual long double asReal(int i = 0);
 	virtual void update();
+	virtual void init();
 protected:
 	virtual void finalize(Monitor& mon);
 private:

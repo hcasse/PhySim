@@ -38,7 +38,10 @@ namespace physim {
 AbstractPort::AbstractPort(Model *model, string name, mode_t mode, const Type& type, int size)
 	: _model(*model), _name(name), _mode(mode), _type(type), _size(size), _back(nullptr)
 {
-	model->_ports.push_back(this);
+	if(mode == IN)
+		model->_ins.push_back(this);
+	else
+		model->_outs.push_back(this);
 }
 
 ///
@@ -50,9 +53,9 @@ AbstractPort::~AbstractPort() {
  * to publish an internal update to connected models. The default
  * implementation does nothing.
  */
-void AbstractPort::publish() {
+/*void AbstractPort::publish() {
 	cerr << "DEBUG: default publish for " << fullname() << endl;
-}
+} TODO */
 
 /**
  * Test if the port supports the expression of its content as real.
@@ -77,6 +80,13 @@ long double AbstractPort::asReal(int i) {
  * the output port. The default implementation does nothing.
  */
 void AbstractPort::update() {
+}
+
+/**
+ * Called to initialize the port.
+ * The default implementation does nothing.
+ */
+void AbstractPort::init() {
 }
 
 
