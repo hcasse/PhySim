@@ -1,0 +1,6 @@
+add_executable("CSS" "CSS.cpp")
+if(NOT NO_QT)
+	target_link_libraries("CSS" "physim_qt" "physim" ${QT_LIBS})
+else()
+	target_link_libraries("CSS" "physim")
+endif()
